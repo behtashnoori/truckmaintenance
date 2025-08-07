@@ -1,0 +1,87 @@
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { ServiceCategory } from '@/lib/api';
+import { Truck, Settings, AlertTriangle } from 'lucide-react';
+
+interface CategorySelectorProps {
+  selectedCategory?: ServiceCategory;
+  onCategorySelect: (category: ServiceCategory) => void;
+  variant?: 'default' | 'compact';
+  className?: string;
+}
+
+const categories = [
+  {
+    id: 'roadside' as ServiceCategory,
+    title: 'خدمات جاده‌ای',
+    description: 'پارکینگ، سوخت، رستوران',
+    icon: Truck,
+  },
+  {
+    id: 'tire' as ServiceCategory,
+    title: 'لاستیک و رینگ',
+    description: 'تعویض و تعمیر لاستیک',
+    icon: Settings,
+  },
+  {
+    id: 'recovery' as ServiceCategory,
+    title: 'امداد و حادثه',
+    description: 'یدک‌کش و تعمیرات اضطراری',
+    icon: AlertTriangle,
+  },
+];
+
+export const CategorySelector: React.FC<CategorySelectorProps> = ({
+  selectedCategory,
+  onCategorySelect,
+  variant = 'default',
+  className = '',
+}) => {
+  if (variant === 'compact') {
+    return (
+      <div className={`flex gap-2 ${className}`}>
+        {categories.map((category) => {
+          const Icon = category.icon;
+          const isSelected = selectedCategory === category.id;
+          
+          return (
+            <Button
+              key={category.id}
+              variant={isSelected ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => onCategorySelect(category.id)}
+              className="flex-1"
+            >
+              <Icon className="ml-1" size={16} />
+              {category.title}
+            </Button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  return (
+    <div className={`grid gap-3 ${className}`}>
+      {categories.map((category) => {
+        const Icon = category.icon;
+        const isSelected = selectedCategory === category.id;
+        
+        return (
+          <Button
+            key={category.id}
+            variant={isSelected ? 'default' : 'outline'}
+            className="h-auto p-4 flex flex-col items-center text-center"
+            onClick={() => onCategorySelect(category.id)}
+          >
+            <Icon size={32} className="mb-2" />
+            <div>
+              <div className="font-semibold text-mobile-base">{category.title}</div>
+              <div className="text-sm opacity-75 mt-1">{category.description}</div>
+            </div>
+          </Button>
+        );
+      })}
+    </div>
+  );
+};
