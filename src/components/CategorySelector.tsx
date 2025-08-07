@@ -8,6 +8,8 @@ interface CategorySelectorProps {
   onCategorySelect: (category: ServiceCategory) => void;
   variant?: 'default' | 'compact';
   className?: string;
+  multiSelect?: boolean;
+  selectedCategories?: ServiceCategory[];
 }
 
 const categories = [
@@ -36,18 +38,22 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   onCategorySelect,
   variant = 'default',
   className = '',
+  multiSelect = false,
+  selectedCategories = [],
 }) => {
+  const isSelected = (categoryId: ServiceCategory) => 
+    multiSelect ? selectedCategories.includes(categoryId) : selectedCategory === categoryId;
   if (variant === 'compact') {
     return (
       <div className={`flex gap-2 ${className}`}>
         {categories.map((category) => {
           const Icon = category.icon;
-          const isSelected = selectedCategory === category.id;
+          const categorySelected = isSelected(category.id);
           
           return (
             <Button
               key={category.id}
-              variant={isSelected ? 'default' : 'outline'}
+              variant={categorySelected ? 'default' : 'outline'}
               size="sm"
               onClick={() => onCategorySelect(category.id)}
               className="flex-1"
@@ -65,12 +71,12 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
     <div className={`grid gap-3 ${className}`}>
       {categories.map((category) => {
         const Icon = category.icon;
-        const isSelected = selectedCategory === category.id;
+        const categorySelected = isSelected(category.id);
         
         return (
           <Button
             key={category.id}
-            variant={isSelected ? 'default' : 'outline'}
+            variant={categorySelected ? 'default' : 'outline'}
             className="h-auto p-4 flex flex-col items-center text-center"
             onClick={() => onCategorySelect(category.id)}
           >

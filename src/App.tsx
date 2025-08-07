@@ -8,6 +8,12 @@ import { SearchPage } from "./pages/SearchPage";
 import { ResultsPage } from "./pages/ResultsPage";
 import { ProviderDetail } from "./pages/ProviderDetail";
 import { LocationError } from "./pages/LocationError";
+import { ProviderSignup } from "./pages/ProviderSignup";
+import { SignupSuccess } from "./pages/SignupSuccess";
+import { AboutPage } from "./pages/AboutPage";
+import { ContactPage } from "./pages/ContactPage";
+import { PrivacyPolicy } from "./pages/PrivacyPolicy";
+import { TermsOfService } from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +30,12 @@ const App = () => (
             <Route path="/results" element={<ResultsPage />} />
             <Route path="/provider/:id" element={<ProviderDetail />} />
             <Route path="/location-error" element={<LocationError />} />
+            <Route path="/signup" element={<ProviderSignup />} />
+            <Route path="/signup/success" element={<SignupSuccess />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/legal/privacy" element={<PrivacyPolicy />} />
+            <Route path="/legal/terms" element={<TermsOfService />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

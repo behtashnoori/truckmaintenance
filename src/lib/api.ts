@@ -198,4 +198,20 @@ class ApiClient {
 }
 
 export const api = new ApiClient();
+
+// Export convenience functions for direct use
+export const getProviders = (lat: number, lon: number, category?: ServiceCategory) => 
+  api.searchProviders(lat, lon, category);
+
+export const getProvider = (id: string) => api.getProvider(id);
+
+export const requestOTP = (phone: string) => api.requestOtp(phone);
+
+export const verifyOTP = (phone: string, code: string) => api.verifyOtp(phone, code);
+
+export const createProvider = (data: ProviderRegistration, token?: string) => 
+  api.registerProvider(data, token || 'mock-token');
+
+export const submitContactForm = (data: ContactForm) => api.submitContact(data);
+
 export type { Provider, ProviderSearchResult, ServiceCategory, ProviderRegistration, ContactForm };
