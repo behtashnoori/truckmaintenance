@@ -19,6 +19,8 @@ interface Provider {
     lon: number;
   };
   radius_km: number;
+  is_24_7: boolean;
+  vehicle_types: VehicleType[];
 }
 
 interface ProviderSearchResult {
@@ -27,9 +29,13 @@ interface ProviderSearchResult {
   phone: string;
   address: string;
   distance_km: number;
+  is_24_7: boolean;
+  vehicle_types: VehicleType[];
+  radius_km: number;
 }
 
 type ServiceCategory = 'roadside' | 'tire' | 'recovery';
+type VehicleType = 'truck' | 'semi' | 'bus';
 
 interface OtpRequest {
   phone: string;
@@ -49,6 +55,8 @@ interface ProviderRegistration {
   };
   radius_km: number;
   categories: ServiceCategory[];
+  is_24_7: boolean;
+  vehicle_types: VehicleType[];
 }
 
 interface ContactForm {
@@ -68,7 +76,9 @@ const mockProviders: Provider[] = [
     distance_km: 2.5,
     categories: ['tire', 'recovery'],
     location: { lat: 35.7219, lon: 51.3347 },
-    radius_km: 50
+    radius_km: 50,
+    is_24_7: true,
+    vehicle_types: ['truck', 'semi']
   },
   {
     id: '2',
@@ -78,7 +88,9 @@ const mockProviders: Provider[] = [
     distance_km: 5.2,
     categories: ['roadside', 'recovery'],
     location: { lat: 35.7419, lon: 51.3047 },
-    radius_km: 75
+    radius_km: 75,
+    is_24_7: false,
+    vehicle_types: ['truck', 'bus']
   },
   {
     id: '3',
@@ -88,7 +100,33 @@ const mockProviders: Provider[] = [
     distance_km: 8.1,
     categories: ['roadside', 'tire'],
     location: { lat: 35.6719, lon: 51.2747 },
-    radius_km: 60
+    radius_km: 60,
+    is_24_7: true,
+    vehicle_types: ['truck', 'semi', 'bus']
+  },
+  {
+    id: '4',
+    name: 'سرویس تخصصی اتوبوس',
+    phone: '09191234567',
+    address: 'اصفهان، خیابان چهارباغ، پلاک ۱۲۳',
+    distance_km: 12.3,
+    categories: ['roadside', 'tire'],
+    location: { lat: 35.6919, lon: 51.2647 },
+    radius_km: 40,
+    is_24_7: false,
+    vehicle_types: ['bus']
+  },
+  {
+    id: '5',
+    name: 'تریلی سرویس البرز',
+    phone: '09361234567',
+    address: 'کرج، خیابان طالقانی، کیلومتر ۸',
+    distance_km: 18.7,
+    categories: ['recovery', 'tire'],
+    location: { lat: 35.8019, lon: 51.1547 },
+    radius_km: 80,
+    is_24_7: true,
+    vehicle_types: ['semi']
   }
 ];
 
@@ -125,7 +163,8 @@ class ApiClient {
   async searchProviders(
     lat: number,
     lon: number,
-    category?: ServiceCategory
+    category?: ServiceCategory,
+    vehicle?: VehicleType
   ): Promise<ApiResponse<ProviderSearchResult[]>> {
     // Mock implementation for development
     await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
@@ -133,7 +172,11 @@ class ApiClient {
     let filteredProviders = mockProviders;
     
     if (category) {
-      filteredProviders = mockProviders.filter(p => p.categories.includes(category));
+      filteredProviders = filteredProviders.filter(p => p.categories.includes(category));
+    }
+    
+    if (vehicle) {
+      filteredProviders = filteredProviders.filter(p => p.vehicle_types.includes(vehicle));
     }
 
     const results: ProviderSearchResult[] = filteredProviders.map(p => ({
@@ -141,7 +184,10 @@ class ApiClient {
       name: p.name,
       phone: p.phone,
       address: p.address,
-      distance_km: p.distance_km
+      distance_km: p.distance_km,
+      is_24_7: p.is_24_7,
+      vehicle_types: p.vehicle_types,
+      radius_km: p.radius_km
     }));
 
     return { success: true, data: results };
@@ -200,8 +246,8 @@ class ApiClient {
 export const api = new ApiClient();
 
 // Export convenience functions for direct use
-export const getProviders = (lat: number, lon: number, category?: ServiceCategory) => 
-  api.searchProviders(lat, lon, category);
+export const getProviders = (lat: number, lon: number, category?: ServiceCategory, vehicle?: VehicleType) => 
+  api.searchProviders(lat, lon, category, vehicle);
 
 export const getProvider = (id: string) => api.getProvider(id);
 
@@ -214,4 +260,4 @@ export const createProvider = (data: ProviderRegistration, token?: string) =>
 
 export const submitContactForm = (data: ContactForm) => api.submitContact(data);
 
-export type { Provider, ProviderSearchResult, ServiceCategory, ProviderRegistration, ContactForm };
+export type { Provider, ProviderSearchResult, ServiceCategory, VehicleType, ProviderRegistration, ContactForm };

@@ -1,24 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
+import { VehicleChips } from '@/components/VehicleChips';
 import { Button } from '@/components/ui/button';
-import { api, Provider, ServiceCategory } from '@/lib/api';
-import { Phone, MapPin, LoaderCircle, Truck, Settings, AlertTriangle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { api, Provider } from '@/lib/api';
+import { Phone, MapPin, LoaderCircle, ArrowLeft, Clock, Radius } from 'lucide-react';
 
-const categoryIcons = {
-  roadside: Truck,
-  tire: Settings,
-  recovery: AlertTriangle,
-};
-
-const categoryNames = {
-  roadside: 'خدمات جاده‌ای',
-  tire: 'لاستیک و رینگ',
-  recovery: 'امداد و حادثه',
-};
 
 export const ProviderDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [provider, setProvider] = useState<Provider | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -82,83 +74,90 @@ export const ProviderDetail: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header title={provider.name} />
+    <div className="min-h-screen flex flex-col bg-background">
+      <Header title="جزئیات ارائه‌دهنده" />
       
-      <div className="flex-1 p-4 space-y-6">
-        {/* Provider Info Card */}
-        <div className="bg-card p-6 rounded-lg shadow-card">
-          <h1 className="text-xl font-bold mb-4">{provider.name}</h1>
-          
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <MapPin size={20} className="text-primary mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-mobile-base">{provider.address}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  فاصله: {provider.distance_km.toFixed(1)} کیلومتر
-                </p>
+      <div className="flex-1 p-6">
+        <div className="max-w-md mx-auto space-y-6">
+          <div className="text-center space-y-6">
+            {/* Header */}
+            <div>
+              <div className="flex items-center justify-center gap-3 mb-2">
+                <h1 className="text-2xl font-bold">{provider.name}</h1>
+                {provider.is_24_7 && (
+                  <Badge variant="success" className="flex items-center gap-1">
+                    <Clock size={16} />
+                    ۲۴/۷
+                  </Badge>
+                )}
+              </div>
+              <p className="text-muted-foreground">{provider.address}</p>
+            </div>
+
+            {/* Distance and Coverage */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-center gap-2 text-primary">
+                <MapPin size={20} />
+                <span className="font-semibold">{provider.distance_km.toFixed(1)} کیلومتر فاصله</span>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm">
+                <Radius size={16} />
+                <span>پوشش تا {provider.radius_km} کیلومتر</span>
               </div>
             </div>
-            
-            <div className="flex items-center gap-3">
-              <Phone size={20} className="text-primary flex-shrink-0" />
-              <p className="text-mobile-base ltr">{provider.phone}</p>
+
+            {/* Call Button */}
+            <Button 
+              onClick={handleCall}
+              size="lg"
+              className="w-full"
+            >
+              <Phone className="ml-2" size={20} />
+              تماس با {provider.name}
+            </Button>
+
+            {/* Services */}
+            <div>
+              <h3 className="text-lg font-semibold mb-3">خدمات ارائه‌شده</h3>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {provider.categories.map((category) => (
+                  <Badge key={category} variant="secondary">
+                    {category === 'roadside' ? 'خدمات کنار جاده' :
+                     category === 'tire' ? 'لاستیک و چرخ' :
+                     category === 'recovery' ? 'بازیابی و امداد' : category}
+                  </Badge>
+                ))}
+              </div>
             </div>
+
+            {/* Vehicle Types */}
+            <div>
+              <h3 className="text-lg font-semibold mb-3">وسایل نقلیه قابل سرویس</h3>
+              <div className="flex justify-center">
+                <VehicleChips vehicleTypes={provider.vehicle_types} />
+              </div>
+            </div>
+
+            {/* Map placeholder */}
+            <div className="bg-muted rounded-lg h-48 flex items-center justify-center">
+              <div className="text-center text-muted-foreground">
+                <MapPin size={32} className="mx-auto mb-2" />
+                <p className="text-sm">نقشه موقعیت</p>
+                <p className="text-xs">عرض: {provider.location.lat.toFixed(6)}</p>
+                <p className="text-xs">طول: {provider.location.lon.toFixed(6)}</p>
+              </div>
+            </div>
+
+            {/* Back Button */}
+            <Button 
+              onClick={() => navigate(-1)}
+              variant="outline"
+              className="w-full"
+            >
+              <ArrowLeft className="ml-2" size={16} />
+              بازگشت به نتایج
+            </Button>
           </div>
-        </div>
-
-        {/* Services */}
-        <div className="bg-card p-6 rounded-lg shadow-card">
-          <h2 className="text-lg font-semibold mb-4">خدمات ارائه شده</h2>
-          
-          <div className="grid gap-3">
-            {provider.categories.map((category) => {
-              const Icon = categoryIcons[category];
-              return (
-                <div
-                  key={category}
-                  className="flex items-center gap-3 p-3 bg-muted rounded-lg"
-                >
-                  <Icon size={24} className="text-primary" />
-                  <span className="text-mobile-base">{categoryNames[category]}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Service Area */}
-        <div className="bg-card p-6 rounded-lg shadow-card">
-          <h2 className="text-lg font-semibold mb-4">محدوده خدمات‌رسانی</h2>
-          <div className="flex items-center gap-3">
-            <MapPin size={20} className="text-primary" />
-            <span className="text-mobile-base">
-              شعاع {provider.radius_km} کیلومتری
-            </span>
-          </div>
-        </div>
-
-        {/* Map Placeholder */}
-        <div className="bg-muted p-8 rounded-lg text-center">
-          <MapPin size={48} className="mx-auto mb-4 text-muted-foreground" />
-          <p className="text-muted-foreground">نقشه موقعیت</p>
-          <p className="text-sm text-muted-foreground mt-2">
-            عرض: {provider.location.lat.toFixed(4)} | طول: {provider.location.lon.toFixed(4)}
-          </p>
-        </div>
-
-        {/* Call Button */}
-        <div className="sticky bottom-4">
-          <Button
-            onClick={handleCall}
-            className="w-full"
-            size="lg"
-            variant="hero"
-          >
-            <Phone className="ml-2" size={20} />
-            تماس با {provider.name}
-          </Button>
         </div>
       </div>
     </div>

@@ -2,20 +2,29 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { CategorySelector } from '@/components/CategorySelector';
+import { VehicleFilter } from '@/components/VehicleFilter';
+import { ProviderCard } from '@/components/ProviderCard';
 import { Button } from '@/components/ui/button';
-import { api, ProviderSearchResult, ServiceCategory } from '@/lib/api';
-import { Phone, MapPin, LoaderCircle } from 'lucide-react';
+import { api, ProviderSearchResult, ServiceCategory, VehicleType } from '@/lib/api';
+import { RefreshCw, MapPin, LoaderCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useLocation } from '@/contexts/LocationContext';
 
 export const ResultsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { updateLocation } = useLocation();
   const [providers, setProviders] = useState<ProviderSearchResult[]>([]);
+  const [allProviders, setAllProviders] = useState<ProviderSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const lat = parseFloat(searchParams.get('lat') || '0');
   const lon = parseFloat(searchParams.get('lon') || '0');
   const category = searchParams.get('category') as ServiceCategory | null;
+  const vehicle = searchParams.get('vehicle') as VehicleType | 'all' | null;
 
   useEffect(() => {
     if (!lat || !lon) {
@@ -26,6 +35,10 @@ export const ResultsPage: React.FC = () => {
     fetchProviders();
   }, [lat, lon, category]);
 
+  useEffect(() => {
+    applyFilters();
+  }, [vehicle, allProviders]);
+
   const fetchProviders = async () => {
     setIsLoading(true);
     setError(null);
@@ -33,12 +46,24 @@ export const ResultsPage: React.FC = () => {
     const response = await api.searchProviders(lat, lon, category || undefined);
     
     if (response.success && response.data) {
-      setProviders(response.data);
+      setAllProviders(response.data);
     } else {
       setError(response.error || 'خطا در بارگذاری نتایج');
     }
     
     setIsLoading(false);
+  };
+
+  const applyFilters = () => {
+    let filtered = allProviders;
+    
+    if (vehicle && vehicle !== 'all') {
+      filtered = allProviders.filter(provider => 
+        provider.vehicle_types.includes(vehicle as VehicleType)
+      );
+    }
+    
+    setProviders(filtered);
   };
 
   const handleCategoryChange = (newCategory: ServiceCategory) => {
@@ -47,8 +72,35 @@ export const ResultsPage: React.FC = () => {
     setSearchParams(newParams);
   };
 
-  const handleCall = (phone: string) => {
-    window.location.href = `tel:${phone}`;
+  const handleVehicleChange = (newVehicle: VehicleType | 'all') => {
+    const newParams = new URLSearchParams(searchParams);
+    if (newVehicle === 'all') {
+      newParams.delete('vehicle');
+    } else {
+      newParams.set('vehicle', newVehicle);
+    }
+    setSearchParams(newParams);
+  };
+
+  const handleRefreshLocation = async () => {
+    setIsRefreshing(true);
+    try {
+      await updateLocation();
+      toast({
+        title: "موقعیت به‌روزرسانی شد",
+        description: "در حال بارگذاری نتایج جدید...",
+      });
+      // Reload page with new location
+      window.location.reload();
+    } catch (error) {
+      toast({
+        title: "خطا در به‌روزرسانی موقعیت",
+        description: "لطفاً دوباره تلاش کنید",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   if (isLoading) {
@@ -71,11 +123,31 @@ export const ResultsPage: React.FC = () => {
       
       {/* Filter Bar */}
       <div className="sticky top-16 z-40 bg-background/95 backdrop-blur-sm border-b p-4">
-        <CategorySelector
-          selectedCategory={category || undefined}
-          onCategorySelect={handleCategoryChange}
-          variant="compact"
-        />
+        <div className="space-y-3">
+          <CategorySelector
+            selectedCategory={category || undefined}
+            onCategorySelect={handleCategoryChange}
+            variant="compact"
+          />
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <VehicleFilter
+                value={(vehicle as VehicleType) || 'all'}
+                onValueChange={handleVehicleChange}
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefreshLocation}
+              disabled={isRefreshing}
+              className="flex items-center gap-2 flex-shrink-0"
+            >
+              <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+              {isRefreshing ? 'در حال به‌روزرسانی...' : 'به‌روزرسانی موقعیت'}
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Results */}
@@ -92,7 +164,10 @@ export const ResultsPage: React.FC = () => {
             <MapPin size={48} className="mx-auto mb-4 text-muted-foreground" />
             <h3 className="text-lg font-semibold mb-2">هیچ خدماتی یافت نشد</h3>
             <p className="text-muted-foreground mb-4">
-              در این منطقه ارائه‌دهنده‌ای برای این نوع خدمات یافت نشد
+              {vehicle && vehicle !== 'all' 
+                ? `نتیجه‌ای برای این دسته با فیلتر ${vehicle === 'truck' ? 'کامیون' : vehicle === 'semi' ? 'تریلی' : 'اتوبوس'} پیدا نشد.`
+                : 'در این منطقه ارائه‌دهنده‌ای برای این نوع خدمات یافت نشد'
+              }
             </p>
             <Button 
               onClick={() => navigate('/')} 
@@ -105,40 +180,15 @@ export const ResultsPage: React.FC = () => {
           <div className="space-y-4">
             <div className="text-sm text-muted-foreground mb-4">
               {providers.length} ارائه‌دهنده یافت شد
+              {vehicle && vehicle !== 'all' && (
+                <span className="mr-1">
+                  برای {vehicle === 'truck' ? 'کامیون' : vehicle === 'semi' ? 'تریلی' : 'اتوبوس'}
+                </span>
+              )}
             </div>
             
             {providers.map((provider) => (
-              <div
-                key={provider.id}
-                className="bg-card p-4 rounded-lg shadow-card border hover:shadow-floating transition-smooth cursor-pointer"
-                onClick={() => navigate(`/provider/${provider.id}`)}
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-mobile-base mb-1">
-                      {provider.name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {provider.address}
-                    </p>
-                    <div className="flex items-center gap-1 text-sm text-primary">
-                      <MapPin size={16} />
-                      {provider.distance_km.toFixed(1)} کیلومتر
-                    </div>
-                  </div>
-                  
-                  <Button
-                    variant="secondary"
-                    size="icon-sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCall(provider.phone);
-                    }}
-                  >
-                    <Phone size={16} />
-                  </Button>
-                </div>
-              </div>
+              <ProviderCard key={provider.id} provider={provider} />
             ))}
           </div>
         )}

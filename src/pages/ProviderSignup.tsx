@@ -4,11 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { CategorySelector } from '@/components/CategorySelector';
 import { Header } from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ServiceCategory, requestOTP, verifyOTP, createProvider } from '@/lib/api';
-import { MapPin, Phone, Building, Radius } from 'lucide-react';
+import { ServiceCategory, VehicleType, requestOTP, verifyOTP, createProvider } from '@/lib/api';
+import { MapPin, Phone, Building, Radius, Clock, Truck, Bus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface LocationData {
@@ -34,6 +36,8 @@ export const ProviderSignup: React.FC = () => {
   const [selectedCategories, setSelectedCategories] = useState<ServiceCategory[]>([]);
   const [location, setLocation] = useState<LocationData | null>(null);
   const [radius, setRadius] = useState('50');
+  const [is24_7, setIs24_7] = useState(false);
+  const [selectedVehicleTypes, setSelectedVehicleTypes] = useState<VehicleType[]>([]);
 
   const handleSendOTP = async () => {
     if (!phone.trim()) {
@@ -156,6 +160,15 @@ export const ProviderSignup: React.FC = () => {
       return;
     }
 
+    if (selectedVehicleTypes.length === 0) {
+      toast({
+        title: "خطا",
+        description: "لطفاً حداقل یک نوع وسیله انتخاب کنید",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       await createProvider({
@@ -166,7 +179,9 @@ export const ProviderSignup: React.FC = () => {
           lon: location.lon
         },
         radius_km: parseInt(radius),
-        categories: selectedCategories
+        categories: selectedCategories,
+        is_24_7: is24_7,
+        vehicle_types: selectedVehicleTypes
       });
       
       navigate('/signup/success');
@@ -186,6 +201,14 @@ export const ProviderSignup: React.FC = () => {
       prev.includes(category)
         ? prev.filter(c => c !== category)
         : [...prev, category]
+    );
+  };
+
+  const handleVehicleTypeToggle = (vehicleType: VehicleType) => {
+    setSelectedVehicleTypes(prev => 
+      prev.includes(vehicleType)
+        ? prev.filter(v => v !== vehicleType)
+        : [...prev, vehicleType]
     );
   };
 
@@ -360,10 +383,83 @@ export const ProviderSignup: React.FC = () => {
                 </CardContent>
               </Card>
 
+              {/* Service Hours */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock size={20} />
+                    ساعات کاری
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="is_24_7">سرویس‌دهی ۲۴ ساعته</Label>
+                      <p className="text-sm text-muted-foreground">آیا در تمام ساعات شبانه‌روز خدمات ارائه می‌دهید؟</p>
+                    </div>
+                    <Switch
+                      id="is_24_7"
+                      checked={is24_7}
+                      onCheckedChange={setIs24_7}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Vehicle Types */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Truck size={20} />
+                    نوع وسایل نقلیه قابل سرویس
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="vehicle-truck"
+                        checked={selectedVehicleTypes.includes('truck')}
+                        onCheckedChange={() => handleVehicleTypeToggle('truck')}
+                      />
+                      <Label htmlFor="vehicle-truck" className="flex items-center gap-2 cursor-pointer">
+                        <Truck size={16} />
+                        کامیون
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="vehicle-semi"
+                        checked={selectedVehicleTypes.includes('semi')}
+                        onCheckedChange={() => handleVehicleTypeToggle('semi')}
+                      />
+                      <Label htmlFor="vehicle-semi" className="flex items-center gap-2 cursor-pointer">
+                        <Truck size={16} />
+                        تریلی
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="vehicle-bus"
+                        checked={selectedVehicleTypes.includes('bus')}
+                        onCheckedChange={() => handleVehicleTypeToggle('bus')}
+                      />
+                      <Label htmlFor="vehicle-bus" className="flex items-center gap-2 cursor-pointer">
+                        <Bus size={16} />
+                        اتوبوس
+                      </Label>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    حداقل یک نوع وسیله انتخاب کنید
+                  </p>
+                </CardContent>
+              </Card>
+
               {/* Submit */}
               <Button 
                 onClick={handleSubmit}
-                disabled={isLoading || !businessName.trim() || selectedCategories.length === 0 || !location}
+                disabled={isLoading || !businessName.trim() || selectedCategories.length === 0 || !location || selectedVehicleTypes.length === 0}
                 className="w-full"
                 size="lg"
                 variant="hero"
