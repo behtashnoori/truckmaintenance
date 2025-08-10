@@ -32,6 +32,7 @@ interface ProviderSearchResult {
   is_24_7: boolean;
   vehicle_types: VehicleType[];
   radius_km: number;
+  categories: ServiceCategory[];
 }
 
 type ServiceCategory = 'roadside' | 'tire' | 'recovery';
@@ -70,63 +71,123 @@ interface ContactForm {
 const mockProviders: Provider[] = [
   {
     id: '1',
-    name: 'تعمیرگاه رستگار',
-    phone: '09123456789',
-    address: 'تهران، خیابان آزادی، کیلومتر ۱۰',
-    distance_km: 2.5,
-    categories: ['tire', 'recovery'],
+    name: 'امداد جاده‌ای آریا',
+    phone: '+989121234567',
+    address: 'تهران–قم، کیلومتر ۲۵',
+    distance_km: 3.2,
+    categories: ['recovery'],
     location: { lat: 35.7219, lon: 51.3347 },
-    radius_km: 50,
+    radius_km: 60,
     is_24_7: true,
     vehicle_types: ['truck', 'semi']
   },
   {
     id: '2',
-    name: 'خدمات جاده‌ای امداد',
-    phone: '09121234567',
-    address: 'تهران، بزرگراه کرج، کیلومتر ۱۵',
-    distance_km: 5.2,
-    categories: ['roadside', 'recovery'],
+    name: 'خدمات لاستیک پارس',
+    phone: '+989129876543',
+    address: 'اتوبان کرج، نبش خیابان آزادی',
+    distance_km: 7.8,
+    categories: ['tire'],
     location: { lat: 35.7419, lon: 51.3047 },
-    radius_km: 75,
+    radius_km: 45,
     is_24_7: false,
     vehicle_types: ['truck', 'bus']
   },
   {
     id: '3',
-    name: 'مجموعه خدماتی پارس',
-    phone: '09129876543',
-    address: 'قم، جاده تهران، کیلومتر ۵',
-    distance_km: 8.1,
-    categories: ['roadside', 'tire'],
+    name: 'پارکینگ و رستوران سروش',
+    phone: '+989125557890',
+    address: 'جاده ساوه، کیلومتر ۱۵',
+    distance_km: 12.5,
+    categories: ['roadside'],
     location: { lat: 35.6719, lon: 51.2747 },
-    radius_km: 60,
+    radius_km: 30,
     is_24_7: true,
     vehicle_types: ['truck', 'semi', 'bus']
   },
   {
     id: '4',
-    name: 'سرویس تخصصی اتوبوس',
-    phone: '09191234567',
-    address: 'اصفهان، خیابان چهارباغ، پلاک ۱۲۳',
-    distance_km: 12.3,
-    categories: ['roadside', 'tire'],
+    name: 'یدک‌کش شبانه‌روزی احمد',
+    phone: '+989123456789',
+    address: 'بزرگراه آزادگان، خروجی کرج',
+    distance_km: 5.1,
+    categories: ['recovery'],
     location: { lat: 35.6919, lon: 51.2647 },
-    radius_km: 40,
-    is_24_7: false,
-    vehicle_types: ['bus']
+    radius_km: 80,
+    is_24_7: true,
+    vehicle_types: ['truck', 'semi']
   },
   {
     id: '5',
-    name: 'تریلی سرویس البرز',
-    phone: '09361234567',
-    address: 'کرج، خیابان طالقانی، کیلومتر ۸',
-    distance_km: 18.7,
-    categories: ['recovery', 'tire'],
+    name: 'تعمیرگاه لاستیک شریف',
+    phone: '+989127654321',
+    address: 'شهر قدس، خیابان امام خمینی',
+    distance_km: 8.9,
+    categories: ['tire'],
     location: { lat: 35.8019, lon: 51.1547 },
-    radius_km: 80,
+    radius_km: 25,
+    is_24_7: false,
+    vehicle_types: ['truck']
+  },
+  {
+    id: '6',
+    name: 'مجتمع خدماتی بهشت',
+    phone: '+989132223333',
+    address: 'جاده اصفهان، کیلومتر ۴۵',
+    distance_km: 15.2,
+    categories: ['roadside'],
+    location: { lat: 35.7319, lon: 51.1947 },
+    radius_km: 50,
     is_24_7: true,
-    vehicle_types: ['semi']
+    vehicle_types: ['truck', 'semi', 'bus']
+  },
+  {
+    id: '7',
+    name: 'امداد سریع کامیون',
+    phone: '+989111112222',
+    address: 'اتوبان کرج–قزوین، استراحتگاه مهرشهر',
+    distance_km: 22.0,
+    categories: ['recovery'],
+    location: { lat: 35.6419, lon: 51.2347 },
+    radius_km: 40,
+    is_24_7: false,
+    vehicle_types: ['truck', 'semi']
+  },
+  {
+    id: '8',
+    name: 'لاستیک فروشی رضا',
+    phone: '+989144445555',
+    address: 'شهریار، میدان امام حسین',
+    distance_km: 11.7,
+    categories: ['tire'],
+    location: { lat: 35.7519, lon: 51.2847 },
+    radius_km: 35,
+    is_24_7: false,
+    vehicle_types: ['truck', 'bus']
+  },
+  {
+    id: '9',
+    name: 'جایگاه سوخت و پارکینگ ملی',
+    phone: '+989155556666',
+    address: 'آزادراه تهران–شمال، کیلومتر ۳۲',
+    distance_km: 18.4,
+    categories: ['roadside'],
+    location: { lat: 35.7819, lon: 51.3647 },
+    radius_km: 20,
+    is_24_7: true,
+    vehicle_types: ['truck', 'semi', 'bus']
+  },
+  {
+    id: '10',
+    name: 'خدمات اتوبوسی آسمان',
+    phone: '+989166667777',
+    address: 'ورامین، خیابان شهید بهشتی',
+    distance_km: 25.3,
+    categories: ['roadside', 'tire'],
+    location: { lat: 35.6119, lon: 51.3947 },
+    radius_km: 55,
+    is_24_7: false,
+    vehicle_types: ['bus']
   }
 ];
 
@@ -187,7 +248,8 @@ class ApiClient {
       distance_km: p.distance_km,
       is_24_7: p.is_24_7,
       vehicle_types: p.vehicle_types,
-      radius_km: p.radius_km
+      radius_km: p.radius_km,
+      categories: p.categories
     }));
 
     return { success: true, data: results };

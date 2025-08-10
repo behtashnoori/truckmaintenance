@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LocationProvider } from "@/contexts/LocationContext";
 import { SearchPage } from "./pages/SearchPage";
+import { CategoryPage } from "./pages/CategoryPage";
 import { ResultsPage } from "./pages/ResultsPage";
 import { ProviderDetail } from "./pages/ProviderDetail";
 import { LocationError } from "./pages/LocationError";
@@ -27,6 +28,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<SearchPage />} />
+            <Route path="/c/:slug" element={<CategoryPage />} />
             <Route path="/results" element={<ResultsPage />} />
             <Route path="/provider/:id" element={<ProviderDetail />} />
             <Route path="/location-error" element={<LocationError />} />

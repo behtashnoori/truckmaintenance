@@ -18,16 +18,20 @@ export const SearchPage: React.FC = () => {
       return;
     }
 
-    const params = new URLSearchParams({
-      lat: lat.toString(),
-      lon: lon.toString(),
-    });
-
     if (selectedCategory) {
-      params.set('category', selectedCategory);
+      const slugMap: Record<ServiceCategory, string> = {
+        roadside: 'roadside',
+        tire: 'tyre-wheel',
+        recovery: 'recovery-accident'
+      };
+      navigate(`/c/${slugMap[selectedCategory]}`);
+    } else {
+      const params = new URLSearchParams({
+        lat: lat.toString(),
+        lon: lon.toString(),
+      });
+      navigate(`/results?${params.toString()}`);
     }
-
-    navigate(`/results?${params.toString()}`);
   };
 
   const hasLocation = lat && lon;
