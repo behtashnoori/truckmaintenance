@@ -12,6 +12,20 @@ export const SearchPage: React.FC = () => {
   const { lat, lon, isLoading, error, requestLocation } = useLocation();
   const navigate = useNavigate();
 
+  const handleDirectNavigation = (category: ServiceCategory) => {
+    if (!lat || !lon) {
+      navigate('/location-error');
+      return;
+    }
+
+    const slugMap: Record<ServiceCategory, string> = {
+      roadside: 'roadside',
+      tire: 'tyre-wheel',
+      recovery: 'recovery-accident'
+    };
+    navigate(`/c/${slugMap[category]}`);
+  };
+
   const handleSearch = () => {
     if (!lat || !lon) {
       navigate('/location-error');
@@ -80,6 +94,8 @@ export const SearchPage: React.FC = () => {
           <CategorySelector
             selectedCategory={selectedCategory}
             onCategorySelect={setSelectedCategory}
+            directNavigation={true}
+            onDirectNavigate={handleDirectNavigation}
           />
         </div>
 

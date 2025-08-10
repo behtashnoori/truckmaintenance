@@ -10,6 +10,8 @@ interface CategorySelectorProps {
   className?: string;
   multiSelect?: boolean;
   selectedCategories?: ServiceCategory[];
+  directNavigation?: boolean;
+  onDirectNavigate?: (category: ServiceCategory) => void;
 }
 
 const categories = [
@@ -40,9 +42,19 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   className = '',
   multiSelect = false,
   selectedCategories = [],
+  directNavigation = false,
+  onDirectNavigate,
 }) => {
   const isSelected = (categoryId: ServiceCategory) => 
     multiSelect ? selectedCategories.includes(categoryId) : selectedCategory === categoryId;
+
+  const handleCategoryClick = (categoryId: ServiceCategory) => {
+    if (directNavigation && onDirectNavigate) {
+      onDirectNavigate(categoryId);
+    } else {
+      onCategorySelect(categoryId);
+    }
+  };
   if (variant === 'compact') {
     return (
       <div className={`flex gap-2 ${className}`}>
@@ -55,7 +67,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
               key={category.id}
               variant={categorySelected ? 'default' : 'outline'}
               size="sm"
-              onClick={() => onCategorySelect(category.id)}
+              onClick={() => handleCategoryClick(category.id)}
               className="flex-1"
             >
               <Icon className="ml-1" size={16} />
@@ -78,7 +90,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
             key={category.id}
             variant={categorySelected ? 'default' : 'outline'}
             className="h-auto p-4 flex flex-col items-center text-center"
-            onClick={() => onCategorySelect(category.id)}
+            onClick={() => handleCategoryClick(category.id)}
           >
             <Icon size={32} className="mb-2" />
             <div>
