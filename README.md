@@ -87,3 +87,16 @@ Once running, visit `/health` to verify the service:
 ```json
 {"status": "ok"}
 ```
+
+### OTP & Provider registration (development)
+
+```sh
+# request a one-time code
+curl -X POST /auth/request-otp -d '{"phone":"+98912..."}'
+
+# verify and obtain JWT
+curl -X POST /auth/verify-otp -d '{"phone":"+98912...","code":"123456"}'
+
+# register provider with the JWT
+curl -H 'Authorization: Bearer <token>' -X POST /providers -d '{"name":"...","phone":"+98912...",...}'
+```

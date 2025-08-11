@@ -1,8 +1,11 @@
-"""Provider search endpoints."""
+"""Provider search and registration endpoints."""
 from flask import Blueprint, request
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
+import jwt
+from geoalchemy2 import WKTElement
 
+from ..config import JWT_SECRET
 from ..db import get_db
 from ..models import Provider, ServiceCategory, VehicleType
 from ..utils.aliases import (
@@ -15,6 +18,90 @@ from ..utils.aliases import (
 
 bp = Blueprint("providers", __name__)
 
+
+def _auth_phone():
+    """Return phone number from Authorization header JWT."""
+    auth = request.headers.get("Authorization", "")
+    parts = auth.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return None
+    token = parts[1]
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+    except jwt.PyJWTError:
+        return None
+    return payload.get("phone")
+
+
+@bp.post("/")
+def register_provider():
+    """Register a new provider using a verified phone JWT."""
+    token_phone = _auth_phone()
+    if not token_phone:
+        return {"error": "unauthorized"}, 401
+
+    data = request.get_json() or {}
+    name = data.get("name")
+    phone = data.get("phone")
+    loc = data.get("location") or {}
+    lat = loc.get("lat")
+    lon = loc.get("lon")
+    radius_km = int(data.get("radius_km", 50))
+    categories = data.get("categories") or []
+    is_24_7 = bool(data.get("is_24_7"))
+    vehicle_types = data.get("vehicle_types") or []
+
+    if not all([name, phone, lat is not None, lon is not None, categories, vehicle_types]):
+        return {"error": "missing fields"}, 400
+    if phone != token_phone:
+        return {"error": "phone mismatch"}, 401
+
+    cat_slugs = []
+    for cat in categories:
+        slug = normalize_category(cat)
+        if slug is None:
+            return {"error": f"invalid category: {cat}"}, 400
+        cat_slugs.append(slug)
+
+    veh_slugs = []
+    for veh in vehicle_types:
+        slug = normalize_vehicle(veh)
+        if slug is None:
+            return {"error": f"invalid vehicle type: {veh}"}, 400
+        veh_slugs.append(slug)
+
+    db = get_db()
+
+    if db.execute(select(Provider).where(Provider.phone == phone)).first():
+        return {"error": "phone exists"}, 400
+
+    categories_db = db.execute(
+        select(ServiceCategory).where(ServiceCategory.slug.in_(cat_slugs))
+    ).scalars().all()
+    if len(categories_db) != len(set(cat_slugs)):
+        return {"error": "unknown category"}, 400
+
+    vehicles_db = db.execute(
+        select(VehicleType).where(VehicleType.slug.in_(veh_slugs))
+    ).scalars().all()
+    if len(vehicles_db) != len(set(veh_slugs)):
+        return {"error": "unknown vehicle type"}, 400
+
+    point = WKTElement(f"POINT({lon} {lat})", srid=4326)
+    provider = Provider(
+        name=name,
+        phone=phone,
+        location=point,
+        radius_km=radius_km,
+        is_24_7=is_24_7,
+    )
+    provider.categories = categories_db
+    provider.vehicle_types = vehicles_db
+
+    db.add(provider)
+    db.commit()
+    db.refresh(provider)
+    return {"status": "pending", "id": provider.id}
 
 @bp.get("/")
 def list_providers():
