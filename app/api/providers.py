@@ -94,3 +94,61 @@ def list_providers():
 
     return providers
 
+
+@bp.get("/<int:provider_id>")
+def get_provider(provider_id: int):
+    """Return detailed information for a provider."""
+
+    lat = request.args.get("lat", type=float)
+    lon = request.args.get("lon", type=float)
+    include_distance = lat is not None and lon is not None
+
+    db = get_db()
+
+    stmt = (
+        select(
+            Provider,
+            func.STX(Provider.location).label("lon"),
+            func.STY(Provider.location).label("lat"),
+        )
+        .options(
+            selectinload(Provider.categories),
+            selectinload(Provider.vehicle_types),
+        )
+        .where(Provider.id == provider_id)
+    )
+
+    if include_distance:
+        point_wkt = f"POINT({lon} {lat})"
+        distance_m = func.STDistance(
+            Provider.location, func.STPointFromText(point_wkt, 4326)
+        )
+        stmt = stmt.add_columns((distance_m / 1000.0).label("distance_km"))
+
+    row = db.execute(stmt).first()
+    if row is None:
+        return {"error": "provider not found"}, 404
+
+    if include_distance:
+        provider, prov_lon, prov_lat, dist = row
+    else:
+        provider, prov_lon, prov_lat = row
+        dist = None
+
+    data = {
+        "id": provider.id,
+        "name": provider.name,
+        "phone": provider.phone,
+        "address": None,
+        "is_24_7": provider.is_24_7,
+        "vehicle_types": [ui_vehicle(v.slug) for v in provider.vehicle_types],
+        "radius_km": provider.radius_km,
+        "categories": [ui_category(c.slug) for c in provider.categories],
+        "location": {"lat": float(prov_lat), "lon": float(prov_lon)},
+    }
+
+    if dist is not None:
+        data["distance_km"] = round(float(dist), 1)
+
+    return data
+
