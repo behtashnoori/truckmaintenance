@@ -100,3 +100,17 @@ curl -X POST /auth/verify-otp -d '{"phone":"+98912...","code":"123456"}'
 # register provider with the JWT
 curl -H 'Authorization: Bearer <token>' -X POST /providers -d '{"name":"...","phone":"+98912...",...}'
 ```
+
+### Seeding demo data
+
+Populate the database with example providers for Tehran, Isfahan, and Tabriz:
+
+```sh
+python -m scripts.seed
+```
+
+After seeding, try a sample search:
+
+```sh
+http :5000/providers lat==35.72 lon==51.41 category==tyre-wheel vehicleType==semi only24_7==true
+```
