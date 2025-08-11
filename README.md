@@ -78,6 +78,7 @@ Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-trick
 
 ```sh
 pip install -r requirements.txt
+alembic upgrade head
 flask --app app run
 ```
 
