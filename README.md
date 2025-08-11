@@ -100,6 +100,7 @@ curl -X POST /auth/verify-otp -d '{"phone":"+98912...","code":"123456"}'
 # register provider with the JWT
 curl -H 'Authorization: Bearer <token>' -X POST /providers -d '{"name":"...","phone":"+98912...",...}'
 ```
+Each phone number may request a new OTP only once every 30 seconds.
 
 ### Seeding demo data
 
@@ -114,3 +115,37 @@ After seeding, try a sample search:
 ```sh
 http :5000/providers lat==35.72 lon==51.41 category==tyre-wheel vehicleType==semi only24_7==true
 ```
+
+### Error format
+
+All error responses follow a unified structure:
+
+```json
+{ "error": { "code": "invalid_request", "message": "lat and lon required" } }
+```
+
+### Provider search & pagination
+
+Supply `lat` and `lon` query parameters to `/providers` to retrieve nearby entries.
+Optional filters include `category`, `vehicleType`, and `only24_7`. When a `page`
+parameter is sent, results are wrapped in a pagination object:
+
+```json
+{
+  "items": [ ... ],
+  "page": 1,
+  "page_size": 20,
+  "total": 123
+}
+```
+
+### Docker
+
+Build and run the service along with SQL Server:
+
+```sh
+docker compose up --build
+```
+
+Environment variables such as `MSSQL_URI`, `JWT_SECRET`, and `FRONTEND_ORIGINS`
+are configured in `docker-compose.yml` and can be adjusted as needed.

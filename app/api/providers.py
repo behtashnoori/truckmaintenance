@@ -14,6 +14,7 @@ from ..utils.aliases import (
     ui_category,
     ui_vehicle,
 )
+from ..utils.errors import json_error
 
 
 bp = Blueprint("providers", __name__)
@@ -38,7 +39,7 @@ def register_provider():
     """Register a new provider using a verified phone JWT."""
     token_phone = _auth_phone()
     if not token_phone:
-        return {"error": "unauthorized"}, 401
+        return json_error("unauthorized", "invalid or missing token", 401)
 
     data = request.get_json() or {}
     name = data.get("name")
@@ -52,40 +53,40 @@ def register_provider():
     vehicle_types = data.get("vehicle_types") or []
 
     if not all([name, phone, lat is not None, lon is not None, categories, vehicle_types]):
-        return {"error": "missing fields"}, 400
+        return json_error("invalid_request", "missing fields")
     if phone != token_phone:
-        return {"error": "phone mismatch"}, 401
+        return json_error("phone_mismatch", "phone mismatch", 401)
 
     cat_slugs = []
     for cat in categories:
         slug = normalize_category(cat)
         if slug is None:
-            return {"error": f"invalid category: {cat}"}, 400
+            return json_error("invalid_category", f"invalid category: {cat}")
         cat_slugs.append(slug)
 
     veh_slugs = []
     for veh in vehicle_types:
         slug = normalize_vehicle(veh)
         if slug is None:
-            return {"error": f"invalid vehicle type: {veh}"}, 400
+            return json_error("invalid_vehicle_type", f"invalid vehicle type: {veh}")
         veh_slugs.append(slug)
 
     db = get_db()
 
     if db.execute(select(Provider).where(Provider.phone == phone)).first():
-        return {"error": "phone exists"}, 400
+        return json_error("phone_exists", "phone exists")
 
     categories_db = db.execute(
         select(ServiceCategory).where(ServiceCategory.slug.in_(cat_slugs))
     ).scalars().all()
     if len(categories_db) != len(set(cat_slugs)):
-        return {"error": "unknown category"}, 400
+        return json_error("unknown_category", "unknown category")
 
     vehicles_db = db.execute(
         select(VehicleType).where(VehicleType.slug.in_(veh_slugs))
     ).scalars().all()
     if len(vehicles_db) != len(set(veh_slugs)):
-        return {"error": "unknown vehicle type"}, 400
+        return json_error("unknown_vehicle_type", "unknown vehicle type")
 
     point = WKTElement(f"POINT({lon} {lat})", srid=4326)
     provider = Provider(
@@ -110,7 +111,7 @@ def list_providers():
     lat = request.args.get("lat", type=float)
     lon = request.args.get("lon", type=float)
     if lat is None or lon is None:
-        return {"error": "lat and lon required"}, 400
+        return json_error("invalid_request", "lat and lon required")
 
     category = request.args.get("category")
     vehicle_type = request.args.get("vehicleType")
@@ -124,7 +125,13 @@ def list_providers():
     offset = (page - 1) * limit
 
     cat_slug = normalize_category(category) if category else None
+    if category and cat_slug is None:
+        return json_error("invalid_category", f"invalid category: {category}")
     veh_slug = normalize_vehicle(vehicle_type) if vehicle_type else None
+    if vehicle_type and veh_slug is None:
+        return json_error(
+            "invalid_vehicle_type", f"invalid vehicle type: {vehicle_type}"
+        )
     only247_flag = (
         str(only247).lower() in {"1", "true", "t", "yes"}
         if only247 is not None
@@ -147,14 +154,25 @@ def list_providers():
         )
         .where(distance_km <= Provider.radius_km)
     )
+    count_stmt = select(func.count(func.distinct(Provider.id))).where(
+        distance_km <= Provider.radius_km
+    )
 
     if cat_slug:
         stmt = stmt.join(Provider.categories).where(ServiceCategory.slug == cat_slug)
+        count_stmt = count_stmt.join(Provider.categories).where(
+            ServiceCategory.slug == cat_slug
+        )
     if veh_slug:
         stmt = stmt.join(Provider.vehicle_types).where(VehicleType.slug == veh_slug)
+        count_stmt = count_stmt.join(Provider.vehicle_types).where(
+            VehicleType.slug == veh_slug
+        )
     if only247_flag:
         stmt = stmt.where(Provider.is_24_7.is_(True))
+        count_stmt = count_stmt.where(Provider.is_24_7.is_(True))
 
+    total = db.execute(count_stmt).scalar()
     stmt = stmt.order_by(distance_km, Provider.name).limit(limit).offset(offset)
 
     rows = db.execute(stmt).all()
@@ -179,6 +197,13 @@ def list_providers():
             }
         )
 
+    if "page" in request.args:
+        return {
+            "items": providers,
+            "page": page,
+            "page_size": limit,
+            "total": int(total or 0),
+        }
     return providers
 
 
@@ -214,7 +239,7 @@ def get_provider(provider_id: int):
 
     row = db.execute(stmt).first()
     if row is None:
-        return {"error": "provider not found"}, 404
+        return json_error("not_found", "provider not found", 404)
 
     if include_distance:
         provider, prov_lon, prov_lat, dist = row
