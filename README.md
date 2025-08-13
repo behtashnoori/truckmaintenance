@@ -1,134 +1,106 @@
-# Welcome to your Lovable project
+# Truck Maintenance Backend & Frontend
 
-## Project info
+This project delivers a two-part system for locating and registering heavy vehicle service providers:
 
-**URL**: https://lovable.dev/projects/c45ee4a9-2e75-439b-87d5-a1c4152c730a
+1. **Flask backend** – REST API for OTP authentication, provider registration and nearby search.
+2. **React frontend** – PWA built with Vite, Tailwind and shadcn/ui for drivers and service providers.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+- Python 3
+- Flask, Flask-CORS
+- SQLAlchemy 2 with GeoAlchemy2 (SQL Server)
+- PyJWT for development JWTs
+- Alembic migrations
+- React + TypeScript + Vite
+- Tailwind CSS & shadcn/ui
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/c45ee4a9-2e75-439b-87d5-a1c4152c730a) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## Repository Layout
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+app/                # Flask application
+  api/              # auth & provider endpoints
+  utils/            # aliases, errors, geo helpers
+  models.py         # SQLAlchemy models
+  config.py         # environment variables
+  db.py             # DB session handling
+migrations/         # Alembic migration files
+scripts/            # seed script
+src/                # React frontend
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Backend Setup
 
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/c45ee4a9-2e75-439b-87d5-a1c4152c730a) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
-
-## Backend (Flask)
-
-### Setup
-
-```sh
+```bash
 pip install -r requirements.txt
 alembic upgrade head
 flask --app app run
 ```
 
-Once running, visit `/health` to verify the service:
+Check health:
 
-```json
-{"status": "ok"}
+```bash
+curl http://localhost:5000/health
+# {"status": "ok"}
 ```
 
-### OTP & Provider registration (development)
+### Seeding Demo Data
 
-```sh
+Populate example providers for Tehran, Isfahan and Tabriz:
+
+```bash
+python -m scripts.seed
+```
+
+Example search after seeding:
+
+```bash
+http :5000/providers lat==35.72 lon==51.41 category==tyre-wheel vehicleType==semi only24_7==true
+```
+
+### OTP Development Flow
+
+```bash
 # request a one-time code
 curl -X POST /auth/request-otp -d '{"phone":"+98912..."}'
 
 # verify and obtain JWT
+dev_code=123456
 curl -X POST /auth/verify-otp -d '{"phone":"+98912...","code":"123456"}'
 
 # register provider with the JWT
 curl -H 'Authorization: Bearer <token>' -X POST /providers -d '{"name":"...","phone":"+98912...",...}'
 ```
-Each phone number may request a new OTP only once every 30 seconds.
+Each phone can request a new code only every 30 seconds. Codes are valid for five minutes.
 
-### Seeding demo data
+### API Overview
 
-Populate the database with example providers for Tehran, Isfahan, and Tabriz:
+| Method & Path                | Description |
+|-----------------------------|-------------|
+| `POST /auth/request-otp`    | issue development OTP |
+| `POST /auth/verify-otp`     | verify OTP and receive JWT |
+| `POST /providers`           | register new provider (requires JWT) |
+| `GET /providers`            | search nearby providers with optional filters |
+| `GET /providers/<id>`       | provider details (optionally include `lat`/`lon` to get `distance_km`) |
+| `GET /health`               | service health check |
 
-```sh
-python -m scripts.seed
-```
+### Error Format
 
-After seeding, try a sample search:
-
-```sh
-http :5000/providers lat==35.72 lon==51.41 category==tyre-wheel vehicleType==semi only24_7==true
-```
-
-### Error format
-
-All error responses follow a unified structure:
+All errors follow the structure:
 
 ```json
 { "error": { "code": "invalid_request", "message": "lat and lon required" } }
 ```
 
-### Provider search & pagination
+### Pagination
 
-Supply `lat` and `lon` query parameters to `/providers` to retrieve nearby entries.
-Optional filters include `category`, `vehicleType`, and `only24_7`. When a `page`
-parameter is sent, results are wrapped in a pagination object:
+If the `page` query parameter is supplied to `/providers`, results are wrapped as:
 
 ```json
 {
@@ -141,11 +113,27 @@ parameter is sent, results are wrapped in a pagination object:
 
 ### Docker
 
-Build and run the service along with SQL Server:
+Run the API together with SQL Server Express:
 
-```sh
+```bash
 docker compose up --build
 ```
 
-Environment variables such as `MSSQL_URI`, `JWT_SECRET`, and `FRONTEND_ORIGINS`
-are configured in `docker-compose.yml` and can be adjusted as needed.
+Environment variables (`MSSQL_URI`, `JWT_SECRET`, `FRONTEND_ORIGINS`) can be adjusted in `docker-compose.yml`.
+
+---
+
+## Frontend Setup
+
+```bash
+npm install
+npm run dev
+```
+
+The frontend expects the backend on `http://localhost:5000`.
+
+---
+
+## License
+
+MIT
