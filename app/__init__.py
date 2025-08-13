@@ -38,6 +38,11 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(providers_bp, url_prefix="/providers")
 
+    @app.route("/")
+    def index():
+        """Basic index route to avoid 404 on root requests."""
+        return {"status": "ok"}
+
     @app.route("/health")
     def health():
         return {"status": "ok"}
