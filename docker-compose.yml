@@ -1,0 +1,20 @@
+version: '3.9'
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong!Passw0rd
+      - MSSQL_PID=Express
+    ports:
+      - "1433:1433"
+  app:
+    build: .
+    environment:
+      - MSSQL_URI=mssql+pyodbc://sa:YourStrong!Passw0rd@db:1433/tempdb?driver=ODBC+Driver+17+for+SQL+Server
+      - JWT_SECRET=change-me
+      - FRONTEND_ORIGINS=http://localhost:5173
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db

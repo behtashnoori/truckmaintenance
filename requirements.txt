@@ -1,0 +1,8 @@
+flask
+flask-cors
+SQLAlchemy>=2
+geoalchemy2
+pyodbc
+alembic
+python-dotenv
+PyJWT
