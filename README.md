@@ -46,7 +46,7 @@ flask --app app run
 Check health:
 
 ```bash
-curl http://localhost:5000/health
+curl http://localhost:5000/
 # {"status": "ok"}
 ```
 
