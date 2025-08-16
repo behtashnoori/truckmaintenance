@@ -35,6 +35,32 @@ src/                # React frontend
 
 ---
 
+## DEV mode (Option A)
+
+### Backend
+
+```
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+alembic upgrade head
+flask --app app run
+```
+
+### Frontend (in repo root)
+
+```
+npm install
+npm run dev  # opens http://localhost:5173
+```
+
+Notes:
+- Open http://localhost:5173 for the UI (main menu).
+- API calls to /api/* are proxied to http://localhost:5000.
+- If data appears empty, seed demo data:
+  `python .\scripts\seed.py`
+
+---
+
 ## Backend Setup
 
 ```bash
