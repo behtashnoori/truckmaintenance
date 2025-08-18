@@ -12,6 +12,22 @@ export const SearchPage: React.FC = () => {
   const { lat, lon, isLoading, error, requestLocation } = useLocation();
   const navigate = useNavigate();
 
+  const handleCategorySelect = (category: ServiceCategory) => {
+    if (category === 'roadside') {
+      if (!lat || !lon) {
+        navigate('/location-error');
+        return;
+      }
+      const params = new URLSearchParams({
+        lat: lat.toString(),
+        lon: lon.toString(),
+      });
+      navigate(`/roadside?${params.toString()}`);
+    } else {
+      setSelectedCategory(category);
+    }
+  };
+
   const handleSearch = () => {
     if (!lat || !lon) {
       navigate('/location-error');
@@ -75,7 +91,7 @@ export const SearchPage: React.FC = () => {
           <h2 className="text-mobile-lg font-semibold mb-4">نوع خدمات مورد نیاز</h2>
           <CategorySelector
             selectedCategory={selectedCategory}
-            onCategorySelect={setSelectedCategory}
+            onCategorySelect={handleCategorySelect}
           />
         </div>
 

@@ -67,6 +67,17 @@ export const ResultsPage: React.FC = () => {
   };
 
   const handleCategoryChange = (newCategory: ServiceCategory) => {
+    if (newCategory === 'roadside') {
+      const latParam = searchParams.get('lat');
+      const lonParam = searchParams.get('lon');
+      if (!latParam || !lonParam) {
+        navigate('/location-error');
+      } else {
+        navigate(`/roadside?lat=${latParam}&lon=${lonParam}`);
+      }
+      return;
+    }
+
     const newParams = new URLSearchParams(searchParams);
     newParams.set('category', newCategory);
     setSearchParams(newParams);

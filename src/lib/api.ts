@@ -66,6 +66,18 @@ interface ContactForm {
   message: string;
 }
 
+interface RoadsideFacility {
+  id: string;
+  name: string;
+  type: 'restaurant' | 'fuel' | 'parking';
+  address: string;
+  location: {
+    lat: number;
+    lon: number;
+  };
+  distance_km: number;
+}
+
 // Mock data for development
 const mockProviders: Provider[] = [
   {
@@ -130,6 +142,43 @@ const mockProviders: Provider[] = [
   }
 ];
 
+const mockRoadsideFacilities: Omit<RoadsideFacility, 'distance_km'>[] = [
+  {
+    id: 'r1',
+    name: 'رستوران بهار',
+    type: 'restaurant',
+    address: 'تهران، خیابان آزادی',
+    location: { lat: 35.7225, lon: 51.337 },
+  },
+  {
+    id: 'f1',
+    name: 'پمپ بنزین آزادی',
+    type: 'fuel',
+    address: 'تهران، بزرگراه شهید لشگری',
+    location: { lat: 35.7249, lon: 51.33 },
+  },
+  {
+    id: 'p1',
+    name: 'پارکینگ کامیونداران',
+    type: 'parking',
+    address: 'تهران، جاده مخصوص',
+    location: { lat: 35.73, lon: 51.35 },
+  },
+];
+
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 class ApiClient {
   private async request<T>(
     endpoint: string,
@@ -193,6 +242,22 @@ class ApiClient {
     return { success: true, data: results };
   }
 
+  // Search nearby roadside facilities like restaurants, fuel and parking
+  async searchRoadsideFacilities(
+    lat: number,
+    lon: number
+  ): Promise<ApiResponse<RoadsideFacility[]>> {
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    const facilities: RoadsideFacility[] = mockRoadsideFacilities.map(f => ({
+      ...f,
+      distance_km: calculateDistance(lat, lon, f.location.lat, f.location.lon),
+    }));
+
+    facilities.sort((a, b) => a.distance_km - b.distance_km);
+    return { success: true, data: facilities };
+  }
+
   // Get provider details
   async getProvider(id: string): Promise<ApiResponse<Provider>> {
     await new Promise(resolve => setTimeout(resolve, 300));
@@ -246,10 +311,13 @@ class ApiClient {
 export const api = new ApiClient();
 
 // Export convenience functions for direct use
-export const getProviders = (lat: number, lon: number, category?: ServiceCategory, vehicle?: VehicleType) => 
+export const getProviders = (lat: number, lon: number, category?: ServiceCategory, vehicle?: VehicleType) =>
   api.searchProviders(lat, lon, category, vehicle);
 
 export const getProvider = (id: string) => api.getProvider(id);
+
+export const getRoadsideFacilities = (lat: number, lon: number) =>
+  api.searchRoadsideFacilities(lat, lon);
 
 export const requestOTP = (phone: string) => api.requestOtp(phone);
 
@@ -260,4 +328,12 @@ export const createProvider = (data: ProviderRegistration, token?: string) =>
 
 export const submitContactForm = (data: ContactForm) => api.submitContact(data);
 
-export type { Provider, ProviderSearchResult, ServiceCategory, VehicleType, ProviderRegistration, ContactForm };
+export type {
+  Provider,
+  ProviderSearchResult,
+  ServiceCategory,
+  VehicleType,
+  ProviderRegistration,
+  ContactForm,
+  RoadsideFacility,
+};
