@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 
 interface LocationState {
   lat: number | null;
@@ -154,12 +154,6 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
   const clearError = () => {
     setState(prev => ({ ...prev, error: null }));
   };
-
-  // Auto-request location on mount
-  useEffect(() => {
-    requestLocation();
-  }, []);
-
   return (
     <LocationContext.Provider
       value={{
