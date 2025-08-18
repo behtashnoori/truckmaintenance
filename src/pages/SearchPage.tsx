@@ -23,6 +23,11 @@ export const SearchPage: React.FC = () => {
       lon: lon.toString(),
     });
 
+    if (selectedCategory === 'roadside') {
+      navigate(`/roadside?${params.toString()}`);
+      return;
+    }
+
     if (selectedCategory) {
       params.set('category', selectedCategory);
     }

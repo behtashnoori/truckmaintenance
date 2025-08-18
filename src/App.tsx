@@ -15,6 +15,7 @@ import { ContactPage } from "./pages/ContactPage";
 import { PrivacyPolicy } from "./pages/PrivacyPolicy";
 import { TermsOfService } from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
+import { RoadsidePage } from "./pages/RoadsidePage";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/" element={<SearchPage />} />
             <Route path="/results" element={<ResultsPage />} />
             <Route path="/provider/:id" element={<ProviderDetail />} />
+            <Route path="/roadside" element={<RoadsidePage />} />
             <Route path="/location-error" element={<LocationError />} />
             <Route path="/signup" element={<ProviderSignup />} />
             <Route path="/signup/success" element={<SignupSuccess />} />
