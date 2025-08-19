@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { CategorySelector } from '@/components/CategorySelector';
 import { Footer } from '@/components/Footer';
-import { useLocation } from '@/contexts/LocationContext';
+import { useLocation, DEFAULT_LOCATION } from '@/contexts/LocationContext';
 import { ServiceCategory } from '@/lib/api';
 import { MapPin, Search, Truck } from 'lucide-react';
 
 export const SearchPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | undefined>();
-  const { lat, lon, isLoading, error, requestLocation } = useLocation();
+  const { lat, lon, isLoading, error } = useLocation();
   const navigate = useNavigate();
 
   const handleCategorySelect = (category: ServiceCategory) => {
@@ -46,7 +46,9 @@ export const SearchPage: React.FC = () => {
     navigate(`/results?${params.toString()}`);
   };
 
-  const hasLocation = lat && lon;
+  const hasLocation = lat !== null && lon !== null;
+  const isDefaultLocation =
+    lat === DEFAULT_LOCATION.lat && lon === DEFAULT_LOCATION.lon;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -67,21 +69,32 @@ export const SearchPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <MapPin size={20} className="text-primary" />
               <span className="text-mobile-base">
-                {isLoading ? 'در حال یافتن موقعیت...' : 
-                 hasLocation ? 'موقعیت شما تأیید شد' : 
-                 'موقعیت مورد نیاز'}
+                {isLoading
+                  ? 'در حال یافتن موقعیت...'
+                  : isDefaultLocation
+                  ? 'موقعیت پیش‌فرض: مرکز تهران'
+                  : 'موقعیت شما تأیید شد'}
               </span>
             </div>
-            {!hasLocation && !isLoading && (
-              <Button variant="outline" size="sm" onClick={requestLocation}>
-                تأیید موقعیت
+            {!isLoading && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/location-error')}
+              >
+                تغییر موقعیت
               </Button>
             )}
           </div>
-          
+
           {error && (
             <div className="mt-2 text-sm text-destructive">
               {error}
+            </div>
+          )}
+          {isDefaultLocation && !error && (
+            <div className="mt-2 text-sm text-muted-foreground">
+              موقعیت پیش‌فرض مرکز تهران است؛ برای تغییر از دکمه بالا استفاده کنید.
             </div>
           )}
         </div>
