@@ -1,7 +1,7 @@
 // API Layer for Heavy Vehicle Service PWA
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
-interface ApiResponse<T = any> {
+interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -220,10 +220,8 @@ class ApiClient {
     }
   }
 
-  // Search providers by location and category
+  // Search providers by category and vehicle type
   async searchProviders(
-    lat: number,
-    lon: number,
     category?: ServiceCategory,
     vehicle?: VehicleType
   ): Promise<ApiResponse<ProviderSearchResult[]>> {
@@ -231,11 +229,11 @@ class ApiClient {
     await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
     
     let filteredProviders = mockProviders;
-    
+
     if (category) {
       filteredProviders = filteredProviders.filter(p => p.categories.includes(category));
     }
-    
+
     if (vehicle) {
       filteredProviders = filteredProviders.filter(p => p.vehicle_types.includes(vehicle));
     }
@@ -308,8 +306,8 @@ class ApiClient {
 export const api = new ApiClient();
 
 // Export convenience functions for direct use
-export const getProviders = (lat: number, lon: number, category?: ServiceCategory, vehicle?: VehicleType) => 
-  api.searchProviders(lat, lon, category, vehicle);
+export const getProviders = (category?: ServiceCategory, vehicle?: VehicleType) =>
+  api.searchProviders(category, vehicle);
 
 export const getProvider = (id: string) => api.getProvider(id);
 
