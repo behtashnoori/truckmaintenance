@@ -34,7 +34,7 @@ export const RoadsidePage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Header title="خدمات جاده‌ای" />
+        <Header title="فروش روغن و فیلتر" />
         <div className="flex-1 flex items-center justify-center">
           <p className="text-muted-foreground">در حال بارگذاری...</p>
         </div>
@@ -45,7 +45,7 @@ export const RoadsidePage: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Header title="خدمات جاده‌ای" />
+        <Header title="فروش روغن و فیلتر" />
         <div className="flex-1 flex items-center justify-center p-4">
           <p className="text-destructive">{error}</p>
         </div>
@@ -80,7 +80,7 @@ export const RoadsidePage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header title="خدمات جاده‌ای" />
+      <Header title="فروش روغن و فیلتر" />
       <div className="flex-1 p-4 space-y-6">
         {groups.restaurant.length > 0 && (
           <div>

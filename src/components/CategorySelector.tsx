@@ -15,8 +15,8 @@ interface CategorySelectorProps {
 const categories = [
   {
     id: 'roadside' as ServiceCategory,
-    title: 'خدمات جاده‌ای',
-    description: 'پارکینگ، سوخت، رستوران',
+    title: 'فروش روغن و فیلتر',
+    description: 'انواع روغن، فیلتر و لوازم مصرفی',
     icon: Truck,
   },
   {
