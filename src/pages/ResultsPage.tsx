@@ -4,6 +4,7 @@ import { Header } from '@/components/Header';
 import { CategorySelector } from '@/components/CategorySelector';
 import { VehicleFilter } from '@/components/VehicleFilter';
 import { ProviderCard } from '@/components/ProviderCard';
+import { LocationSelector } from '@/components/LocationSelector';
 import { Button } from '@/components/ui/button';
 import { api, ProviderSearchResult, ServiceCategory, VehicleType } from '@/lib/api';
 import { RefreshCw, MapPin, LoaderCircle } from 'lucide-react';
@@ -25,15 +26,17 @@ export const ResultsPage: React.FC = () => {
   const lon = parseFloat(searchParams.get('lon') || '0');
   const category = searchParams.get('category') as ServiceCategory | null;
   const vehicle = searchParams.get('vehicle') as VehicleType | 'all' | null;
+  const city = searchParams.get('city') || undefined;
+  const county = searchParams.get('county') || undefined;
 
   useEffect(() => {
-    if (!lat || !lon) {
+    if ((!lat || !lon) && !city) {
       navigate('/location-error');
       return;
     }
 
     fetchProviders();
-  }, [lat, lon, category]);
+  }, [lat, lon, category, city, county]);
 
   useEffect(() => {
     applyFilters();
@@ -43,7 +46,14 @@ export const ResultsPage: React.FC = () => {
     setIsLoading(true);
     setError(null);
 
-    const response = await api.searchProviders(lat, lon, category || undefined);
+    const response = await api.searchProviders(
+      lat || undefined,
+      lon || undefined,
+      category || undefined,
+      undefined,
+      city,
+      county
+    );
     
     if (response.success && response.data) {
       setAllProviders(response.data);
@@ -78,6 +88,27 @@ export const ResultsPage: React.FC = () => {
       newParams.delete('vehicle');
     } else {
       newParams.set('vehicle', newVehicle);
+    }
+    setSearchParams(newParams);
+  };
+
+  const handleCityChange = (newCity: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (newCity) {
+      newParams.set('city', newCity);
+    } else {
+      newParams.delete('city');
+    }
+    newParams.delete('county');
+    setSearchParams(newParams);
+  };
+
+  const handleCountyChange = (newCounty: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (newCounty) {
+      newParams.set('county', newCounty);
+    } else {
+      newParams.delete('county');
     }
     setSearchParams(newParams);
   };
@@ -124,6 +155,12 @@ export const ResultsPage: React.FC = () => {
       {/* Filter Bar */}
       <div className="sticky top-16 z-40 bg-background/95 backdrop-blur-sm border-b p-4">
         <div className="space-y-3">
+          <LocationSelector
+            city={city}
+            county={county}
+            onCityChange={handleCityChange}
+            onCountyChange={handleCountyChange}
+          />
           <CategorySelector
             selectedCategory={category || undefined}
             onCategorySelect={handleCategoryChange}

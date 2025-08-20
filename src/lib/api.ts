@@ -21,6 +21,8 @@ interface Provider {
   radius_km: number;
   is_24_7: boolean;
   vehicle_types: VehicleType[];
+  city: string;
+  county: string;
 }
 
 interface ProviderSearchResult {
@@ -33,6 +35,8 @@ interface ProviderSearchResult {
   vehicle_types: VehicleType[];
   radius_km: number;
   categories: ServiceCategory[];
+  city: string;
+  county: string;
 }
 
 type ServiceCategory = 'roadside' | 'tire' | 'recovery';
@@ -79,7 +83,9 @@ const mockProviders: Provider[] = [
     location: { lat: 35.7219, lon: 51.3347 },
     radius_km: 60,
     is_24_7: true,
-    vehicle_types: ['truck', 'semi']
+    vehicle_types: ['truck', 'semi'],
+    city: 'تهران',
+    county: 'تهران'
   },
   {
     id: '2',
@@ -91,7 +97,9 @@ const mockProviders: Provider[] = [
     location: { lat: 35.7419, lon: 51.3047 },
     radius_km: 45,
     is_24_7: false,
-    vehicle_types: ['truck', 'bus']
+    vehicle_types: ['truck', 'bus'],
+    city: 'تهران',
+    county: 'کرج'
   },
   {
     id: '3',
@@ -103,7 +111,9 @@ const mockProviders: Provider[] = [
     location: { lat: 35.6719, lon: 51.2747 },
     radius_km: 30,
     is_24_7: true,
-    vehicle_types: ['truck', 'semi', 'bus']
+    vehicle_types: ['truck', 'semi', 'bus'],
+    city: 'تهران',
+    county: 'ساوه'
   },
   {
     id: '4',
@@ -115,7 +125,9 @@ const mockProviders: Provider[] = [
     location: { lat: 35.6919, lon: 51.2647 },
     radius_km: 80,
     is_24_7: true,
-    vehicle_types: ['truck', 'semi']
+    vehicle_types: ['truck', 'semi'],
+    city: 'تهران',
+    county: 'کرج'
   },
   {
     id: '5',
@@ -127,7 +139,9 @@ const mockProviders: Provider[] = [
     location: { lat: 35.8019, lon: 51.1547 },
     radius_km: 25,
     is_24_7: false,
-    vehicle_types: ['truck']
+    vehicle_types: ['truck'],
+    city: 'تهران',
+    county: 'قدس'
   },
   {
     id: '6',
@@ -139,7 +153,9 @@ const mockProviders: Provider[] = [
     location: { lat: 35.7319, lon: 51.1947 },
     radius_km: 50,
     is_24_7: true,
-    vehicle_types: ['truck', 'semi', 'bus']
+    vehicle_types: ['truck', 'semi', 'bus'],
+    city: 'اصفهان',
+    county: 'اصفهان'
   },
   {
     id: '7',
@@ -151,7 +167,9 @@ const mockProviders: Provider[] = [
     location: { lat: 35.6419, lon: 51.2347 },
     radius_km: 40,
     is_24_7: false,
-    vehicle_types: ['truck', 'semi']
+    vehicle_types: ['truck', 'semi'],
+    city: 'تهران',
+    county: 'کرج'
   },
   {
     id: '8',
@@ -163,7 +181,9 @@ const mockProviders: Provider[] = [
     location: { lat: 35.7519, lon: 51.2847 },
     radius_km: 35,
     is_24_7: false,
-    vehicle_types: ['truck', 'bus']
+    vehicle_types: ['truck', 'bus'],
+    city: 'تهران',
+    county: 'شهریار'
   },
   {
     id: '9',
@@ -175,7 +195,9 @@ const mockProviders: Provider[] = [
     location: { lat: 35.7819, lon: 51.3647 },
     radius_km: 20,
     is_24_7: true,
-    vehicle_types: ['truck', 'semi', 'bus']
+    vehicle_types: ['truck', 'semi', 'bus'],
+    city: 'تهران',
+    county: 'تهران'
   },
   {
     id: '10',
@@ -187,7 +209,9 @@ const mockProviders: Provider[] = [
     location: { lat: 35.6119, lon: 51.3947 },
     radius_km: 55,
     is_24_7: false,
-    vehicle_types: ['bus']
+    vehicle_types: ['bus'],
+    city: 'تهران',
+    county: 'ورامین'
   }
 ];
 
@@ -222,20 +246,29 @@ class ApiClient {
 
   // Search providers by location and category
   async searchProviders(
-    lat: number,
-    lon: number,
+    lat?: number,
+    lon?: number,
     category?: ServiceCategory,
-    vehicle?: VehicleType
+    vehicle?: VehicleType,
+    city?: string,
+    county?: string
   ): Promise<ApiResponse<ProviderSearchResult[]>> {
     // Mock implementation for development
     await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
     
     let filteredProviders = mockProviders;
     
+    if (city) {
+      filteredProviders = filteredProviders.filter(p => p.city === city);
+      if (county) {
+        filteredProviders = filteredProviders.filter(p => p.county === county);
+      }
+    }
+
     if (category) {
       filteredProviders = filteredProviders.filter(p => p.categories.includes(category));
     }
-    
+
     if (vehicle) {
       filteredProviders = filteredProviders.filter(p => p.vehicle_types.includes(vehicle));
     }
@@ -249,7 +282,9 @@ class ApiClient {
       is_24_7: p.is_24_7,
       vehicle_types: p.vehicle_types,
       radius_km: p.radius_km,
-      categories: p.categories
+      categories: p.categories,
+      city: p.city,
+      county: p.county
     }));
 
     return { success: true, data: results };

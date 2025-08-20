@@ -3,12 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { CategorySelector } from '@/components/CategorySelector';
 import { Footer } from '@/components/Footer';
+import { LocationSelector } from '@/components/LocationSelector';
 import { useLocation } from '@/contexts/LocationContext';
 import { ServiceCategory } from '@/lib/api';
 import { MapPin, Search, Truck } from 'lucide-react';
 
 export const SearchPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | undefined>();
+  const [city, setCity] = useState<string | undefined>();
+  const [county, setCounty] = useState<string | undefined>();
   const { lat, lon, isLoading, error, requestLocation } = useLocation();
   const navigate = useNavigate();
 
@@ -27,9 +30,21 @@ export const SearchPage: React.FC = () => {
   };
 
   const handleSearch = () => {
-    if (!lat || !lon) {
+    if (!hasLocation && !city) {
       navigate('/location-error');
       return;
+    }
+
+    const params = new URLSearchParams();
+    if (lat && lon) {
+      params.set('lat', lat.toString());
+      params.set('lon', lon.toString());
+    }
+    if (city) {
+      params.set('city', city);
+    }
+    if (county) {
+      params.set('county', county);
     }
 
     if (selectedCategory) {
@@ -38,17 +53,14 @@ export const SearchPage: React.FC = () => {
         tire: 'tyre-wheel',
         recovery: 'recovery-accident'
       };
-      navigate(`/c/${slugMap[selectedCategory]}`);
+      navigate(`/c/${slugMap[selectedCategory]}?${params.toString()}`);
     } else {
-      const params = new URLSearchParams({
-        lat: lat.toString(),
-        lon: lon.toString(),
-      });
       navigate(`/results?${params.toString()}`);
     }
   };
 
   const hasLocation = lat && lon;
+  const canSearch = hasLocation || city;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -88,6 +100,20 @@ export const SearchPage: React.FC = () => {
           )}
         </div>
 
+        {/* Location Selection */}
+        <div>
+          <h2 className="text-mobile-lg font-semibold mb-4">موقعیت</h2>
+          <LocationSelector
+            city={city}
+            county={county}
+            onCityChange={(c) => {
+              setCity(c);
+              setCounty(undefined);
+            }}
+            onCountyChange={setCounty}
+          />
+        </div>
+
         {/* Category Selection */}
         <div>
           <h2 className="text-mobile-lg font-semibold mb-4">نوع خدمات مورد نیاز</h2>
@@ -102,7 +128,7 @@ export const SearchPage: React.FC = () => {
         {/* Search Button */}
         <Button
           onClick={handleSearch}
-          disabled={!hasLocation || isLoading}
+          disabled={!canSearch || isLoading}
           className="w-full"
           size="lg"
           variant="hero"
