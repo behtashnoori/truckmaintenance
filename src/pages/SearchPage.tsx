@@ -12,18 +12,20 @@ export const SearchPage: React.FC = () => {
   const { lat, lon, isLoading, error, requestLocation } = useLocation();
   const navigate = useNavigate();
 
-  const handleDirectNavigation = (category: ServiceCategory) => {
-    if (!lat || !lon) {
-      navigate('/location-error');
-      return;
+  const handleCategorySelect = (category: ServiceCategory) => {
+    setSelectedCategory(category);
+    if (category !== 'roadside') {
+      if (!lat || !lon) {
+        navigate('/location-error');
+        return;
+      }
+      const slugMap: Record<ServiceCategory, string> = {
+        roadside: 'oil-filter',
+        tire: 'tyre-wheel',
+        recovery: 'recovery-accident'
+      };
+      navigate(`/c/${slugMap[category]}`);
     }
-
-    const slugMap: Record<ServiceCategory, string> = {
-      roadside: 'roadside',
-      tire: 'tyre-wheel',
-      recovery: 'recovery-accident'
-    };
-    navigate(`/c/${slugMap[category]}`);
   };
 
   const handleSearch = () => {
@@ -31,20 +33,8 @@ export const SearchPage: React.FC = () => {
       navigate('/location-error');
       return;
     }
-
-    if (selectedCategory) {
-      const slugMap: Record<ServiceCategory, string> = {
-        roadside: 'roadside',
-        tire: 'tyre-wheel',
-        recovery: 'recovery-accident'
-      };
-      navigate(`/c/${slugMap[selectedCategory]}`);
-    } else {
-      const params = new URLSearchParams({
-        lat: lat.toString(),
-        lon: lon.toString(),
-      });
-      navigate(`/results?${params.toString()}`);
+    if (selectedCategory === 'roadside') {
+      navigate('/c/oil-filter');
     }
   };
 
@@ -63,53 +53,55 @@ export const SearchPage: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex-1 p-6 space-y-6">
-        {/* Location Status */}
-        <div className="bg-card p-4 rounded-lg shadow-card">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <MapPin size={20} className="text-primary" />
-              <span className="text-mobile-base">
-                {isLoading ? 'در حال یافتن موقعیت...' : 
-                 hasLocation ? 'موقعیت شما تأیید شد' : 
-                 'موقعیت مورد نیاز'}
-              </span>
-            </div>
-            {!hasLocation && !isLoading && (
-              <Button variant="outline" size="sm" onClick={requestLocation}>
-                تأیید موقعیت
-              </Button>
-            )}
-          </div>
-          
-          {error && (
-            <div className="mt-2 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-        </div>
-
         {/* Category Selection */}
         <div>
           <h2 className="text-mobile-lg font-semibold mb-4">نوع خدمات مورد نیاز</h2>
           <CategorySelector
             selectedCategory={selectedCategory}
-            onCategorySelect={setSelectedCategory}
-            directNavigation={true}
-            onDirectNavigate={handleDirectNavigation}
+            onCategorySelect={handleCategorySelect}
           />
         </div>
 
-        {/* Search Button */}
-        <Button
-          onClick={handleSearch}
-          disabled={!hasLocation || isLoading}
-          className="w-full"
-          size="lg"
-          variant="hero"
-        >
-          <Search className="ml-2" size={20} />
-          جستجوی خدمات
-        </Button>
+        {selectedCategory === 'roadside' && (
+          <>
+            {/* Location Status */}
+            <div className="bg-card p-4 rounded-lg shadow-card">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MapPin size={20} className="text-primary" />
+                  <span className="text-mobile-base">
+                    {isLoading ? 'در حال یافتن موقعیت...' :
+                     hasLocation ? 'موقعیت شما تأیید شد' :
+                     'موقعیت مورد نیاز'}
+                  </span>
+                </div>
+                {!hasLocation && !isLoading && (
+                  <Button variant="outline" size="sm" onClick={requestLocation}>
+                    تأیید موقعیت
+                  </Button>
+                )}
+              </div>
+
+              {error && (
+                <div className="mt-2 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
+            </div>
+
+            {/* Search Button */}
+            <Button
+              onClick={handleSearch}
+              disabled={!hasLocation || isLoading}
+              className="w-full"
+              size="lg"
+              variant="hero"
+            >
+              <Search className="ml-2" size={20} />
+              جستجوی خدمات
+            </Button>
+          </>
+        )}
 
         {/* Provider Registration Link */}
         <div className="text-center pt-4">

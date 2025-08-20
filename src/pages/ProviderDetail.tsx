@@ -122,7 +122,7 @@ export const ProviderDetail: React.FC = () => {
               <div className="flex flex-wrap gap-2 justify-center">
                 {provider.categories.map((category) => (
                   <Badge key={category} variant="secondary">
-                    {category === 'roadside' ? 'خدمات کنار جاده' :
+                    {category === 'roadside' ? 'فروش روغن و فیلتر' :
                      category === 'tire' ? 'لاستیک و چرخ' :
                      category === 'recovery' ? 'بازیابی و امداد' : category}
                   </Badge>
