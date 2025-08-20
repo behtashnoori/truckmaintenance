@@ -18,11 +18,11 @@ interface CategoryInfo {
 }
 
 const categoryMap: Record<string, CategoryInfo> = {
-  roadside: {
+  'oil-filter': {
     id: 'roadside',
-    title: 'خدمات جاده‌ای',
-    subtitle: 'پارکینگ، سوخت و رستوران',
-    subcategories: ['پارکینگ', 'سوخت', 'رستوران']
+    title: 'فروش روغن و فیلتر',
+    subtitle: 'روغن و فیلتر انواع خودروهای سنگین',
+    subcategories: ['روغن موتور', 'فیلتر روغن', 'فیلتر هوا']
   },
   'tyre-wheel': {
     id: 'tire',
@@ -104,7 +104,7 @@ export const CategoryPage: React.FC = () => {
 
   const handleCategoryChange = (newCategory: ServiceCategory) => {
     const slugMap: Record<ServiceCategory, string> = {
-      roadside: 'roadside',
+      roadside: 'oil-filter',
       tire: 'tyre-wheel',
       recovery: 'recovery-accident'
     };
