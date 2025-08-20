@@ -103,12 +103,17 @@ export const CategoryPage: React.FC = () => {
   };
 
   const handleCategoryChange = (newCategory: ServiceCategory) => {
+    if (newCategory === 'oil') {
+      navigate('/oil-sale');
+      return;
+    }
     const slugMap: Record<ServiceCategory, string> = {
       roadside: 'roadside',
       tire: 'tyre-wheel',
-      recovery: 'recovery-accident'
+      recovery: 'recovery-accident',
+      oil: 'oil-sale'
     };
-    
+
     navigate(`/c/${slugMap[newCategory]}`);
   };
 
