@@ -13,6 +13,10 @@ export const SearchPage: React.FC = () => {
   const navigate = useNavigate();
 
   const handleDirectNavigation = (category: ServiceCategory) => {
+    if (category === 'oil') {
+      navigate('/oil-sale');
+      return;
+    }
     if (!lat || !lon) {
       navigate('/location-error');
       return;
@@ -21,12 +25,17 @@ export const SearchPage: React.FC = () => {
     const slugMap: Record<ServiceCategory, string> = {
       roadside: 'roadside',
       tire: 'tyre-wheel',
-      recovery: 'recovery-accident'
+      recovery: 'recovery-accident',
+      oil: 'oil-sale'
     };
     navigate(`/c/${slugMap[category]}`);
   };
 
   const handleSearch = () => {
+    if (selectedCategory === 'oil') {
+      navigate('/oil-sale');
+      return;
+    }
     if (!lat || !lon) {
       navigate('/location-error');
       return;
@@ -36,7 +45,8 @@ export const SearchPage: React.FC = () => {
       const slugMap: Record<ServiceCategory, string> = {
         roadside: 'roadside',
         tire: 'tyre-wheel',
-        recovery: 'recovery-accident'
+        recovery: 'recovery-accident',
+        oil: 'oil-sale'
       };
       navigate(`/c/${slugMap[selectedCategory]}`);
     } else {
@@ -102,7 +112,7 @@ export const SearchPage: React.FC = () => {
         {/* Search Button */}
         <Button
           onClick={handleSearch}
-          disabled={!hasLocation || isLoading}
+          disabled={selectedCategory !== 'oil' && (!hasLocation || isLoading)}
           className="w-full"
           size="lg"
           variant="hero"
