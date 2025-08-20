@@ -1,52 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { CategorySelector } from '@/components/CategorySelector';
 import { Footer } from '@/components/Footer';
 import { useLocation } from '@/contexts/LocationContext';
-import { ServiceCategory } from '@/lib/api';
-import { MapPin, Search, Truck } from 'lucide-react';
+import { MapPin, Truck } from 'lucide-react';
 
 export const SearchPage: React.FC = () => {
-  const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | undefined>();
   const { lat, lon, isLoading, error, requestLocation } = useLocation();
   const navigate = useNavigate();
-
-  const handleDirectNavigation = (category: ServiceCategory) => {
-    if (!lat || !lon) {
-      navigate('/location-error');
-      return;
-    }
-
-    const slugMap: Record<ServiceCategory, string> = {
-      roadside: 'roadside',
-      tire: 'tyre-wheel',
-      recovery: 'recovery-accident'
-    };
-    navigate(`/c/${slugMap[category]}`);
-  };
-
-  const handleSearch = () => {
-    if (!lat || !lon) {
-      navigate('/location-error');
-      return;
-    }
-
-    if (selectedCategory) {
-      const slugMap: Record<ServiceCategory, string> = {
-        roadside: 'roadside',
-        tire: 'tyre-wheel',
-        recovery: 'recovery-accident'
-      };
-      navigate(`/c/${slugMap[selectedCategory]}`);
-    } else {
-      const params = new URLSearchParams({
-        lat: lat.toString(),
-        lon: lon.toString(),
-      });
-      navigate(`/results?${params.toString()}`);
-    }
-  };
 
   const hasLocation = lat && lon;
 
@@ -87,29 +48,6 @@ export const SearchPage: React.FC = () => {
             </div>
           )}
         </div>
-
-        {/* Category Selection */}
-        <div>
-          <h2 className="text-mobile-lg font-semibold mb-4">نوع خدمات مورد نیاز</h2>
-          <CategorySelector
-            selectedCategory={selectedCategory}
-            onCategorySelect={setSelectedCategory}
-            directNavigation={true}
-            onDirectNavigate={handleDirectNavigation}
-          />
-        </div>
-
-        {/* Search Button */}
-        <Button
-          onClick={handleSearch}
-          disabled={!hasLocation || isLoading}
-          className="w-full"
-          size="lg"
-          variant="hero"
-        >
-          <Search className="ml-2" size={20} />
-          جستجوی خدمات
-        </Button>
 
         {/* Provider Registration Link */}
         <div className="text-center pt-4">
