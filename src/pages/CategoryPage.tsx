@@ -6,9 +6,7 @@ import { VehicleFilter } from '@/components/VehicleFilter';
 import { ProviderCard } from '@/components/ProviderCard';
 import { Button } from '@/components/ui/button';
 import { api, ProviderSearchResult, ServiceCategory, VehicleType } from '@/lib/api';
-import { RefreshCw, MapPin, LoaderCircle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { useLocation } from '@/contexts/LocationContext';
+import { MapPin, LoaderCircle } from 'lucide-react';
 
 interface CategoryInfo {
   id: ServiceCategory;
@@ -41,31 +39,23 @@ const categoryMap: Record<string, CategoryInfo> = {
 export const CategoryPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { lat, lon, updateLocation } = useLocation();
   
   const [providers, setProviders] = useState<ProviderSearchResult[]>([]);
   const [filteredProviders, setFilteredProviders] = useState<ProviderSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleType | 'all'>('all');
 
   const categoryInfo = slug ? categoryMap[slug] : null;
 
   useEffect(() => {
-    if (!lat || !lon) {
-      navigate('/location-error');
-      return;
-    }
-
     if (!categoryInfo) {
       navigate('/');
       return;
     }
 
     fetchProviders();
-  }, [lat, lon, categoryInfo]);
+  }, [categoryInfo]);
 
   useEffect(() => {
     applyVehicleFilter();
@@ -73,20 +63,19 @@ export const CategoryPage: React.FC = () => {
 
   const fetchProviders = async () => {
     if (!categoryInfo) return;
-    
+
     setIsLoading(true);
     setError(null);
 
-    const response = await api.searchProviders(lat!, lon!, categoryInfo.id);
-    
+    const response = await api.searchProviders(categoryInfo.id);
+
     if (response.success && response.data) {
-      // Sort by distance
       const sortedProviders = response.data.sort((a, b) => a.distance_km - b.distance_km);
       setProviders(sortedProviders);
     } else {
       setError(response.error || 'خطا در بارگذاری نتایج');
     }
-    
+
     setIsLoading(false);
   };
 
@@ -110,26 +99,6 @@ export const CategoryPage: React.FC = () => {
     };
     
     navigate(`/c/${slugMap[newCategory]}`);
-  };
-
-  const handleRefreshLocation = async () => {
-    setIsRefreshing(true);
-    try {
-      await updateLocation();
-      toast({
-        title: "موقعیت به‌روزرسانی شد",
-        description: "در حال بارگذاری نتایج جدید...",
-      });
-      fetchProviders();
-    } catch (error) {
-      toast({
-        title: "خطا در به‌روزرسانی موقعیت",
-        description: "لطفاً دوباره تلاش کنید",
-        variant: "destructive",
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
   };
 
   if (!categoryInfo) {
@@ -175,16 +144,6 @@ export const CategoryPage: React.FC = () => {
                 onValueChange={setSelectedVehicle}
               />
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefreshLocation}
-              disabled={isRefreshing}
-              className="flex items-center gap-2 flex-shrink-0"
-            >
-              <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
-              {isRefreshing ? 'در حال به‌روزرسانی...' : 'به‌روزرسانی موقعیت'}
-            </Button>
           </div>
         </div>
       </div>

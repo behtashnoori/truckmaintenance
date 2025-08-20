@@ -6,34 +6,22 @@ import { VehicleFilter } from '@/components/VehicleFilter';
 import { ProviderCard } from '@/components/ProviderCard';
 import { Button } from '@/components/ui/button';
 import { api, ProviderSearchResult, ServiceCategory, VehicleType } from '@/lib/api';
-import { RefreshCw, MapPin, LoaderCircle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { useLocation } from '@/contexts/LocationContext';
+import { MapPin, LoaderCircle } from 'lucide-react';
 
 export const ResultsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { updateLocation } = useLocation();
   const [providers, setProviders] = useState<ProviderSearchResult[]>([]);
   const [allProviders, setAllProviders] = useState<ProviderSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const lat = parseFloat(searchParams.get('lat') || '0');
-  const lon = parseFloat(searchParams.get('lon') || '0');
   const category = searchParams.get('category') as ServiceCategory | null;
   const vehicle = searchParams.get('vehicle') as VehicleType | 'all' | null;
 
   useEffect(() => {
-    if (!lat || !lon) {
-      navigate('/location-error');
-      return;
-    }
-
     fetchProviders();
-  }, [lat, lon, category]);
+  }, [category]);
 
   useEffect(() => {
     applyFilters();
@@ -43,7 +31,7 @@ export const ResultsPage: React.FC = () => {
     setIsLoading(true);
     setError(null);
 
-    const response = await api.searchProviders(lat, lon, category || undefined);
+    const response = await api.searchProviders(category || undefined);
     
     if (response.success && response.data) {
       setAllProviders(response.data);
@@ -82,27 +70,6 @@ export const ResultsPage: React.FC = () => {
     setSearchParams(newParams);
   };
 
-  const handleRefreshLocation = async () => {
-    setIsRefreshing(true);
-    try {
-      await updateLocation();
-      toast({
-        title: "موقعیت به‌روزرسانی شد",
-        description: "در حال بارگذاری نتایج جدید...",
-      });
-      // Reload page with new location
-      window.location.reload();
-    } catch (error) {
-      toast({
-        title: "خطا در به‌روزرسانی موقعیت",
-        description: "لطفاً دوباره تلاش کنید",
-        variant: "destructive",
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -136,16 +103,6 @@ export const ResultsPage: React.FC = () => {
                 onValueChange={handleVehicleChange}
               />
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefreshLocation}
-              disabled={isRefreshing}
-              className="flex items-center gap-2 flex-shrink-0"
-            >
-              <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
-              {isRefreshing ? 'در حال به‌روزرسانی...' : 'به‌روزرسانی موقعیت'}
-            </Button>
           </div>
         </div>
       </div>
