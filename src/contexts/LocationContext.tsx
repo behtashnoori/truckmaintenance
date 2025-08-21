@@ -155,10 +155,7 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
     setState(prev => ({ ...prev, error: null }));
   };
 
-  // Auto-request location on mount
-  useEffect(() => {
-    requestLocation();
-  }, []);
+  // Location is now requested explicitly by pages when needed
 
   return (
     <LocationContext.Provider

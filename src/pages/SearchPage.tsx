@@ -99,6 +99,15 @@ export const SearchPage: React.FC = () => {
           />
         </div>
 
+        {/* Oil & Filter Sales Menu */}
+        <Button
+          onClick={() => navigate('/oil-filter')}
+          className="w-full"
+          variant="outline"
+        >
+          فروش روغن و فیلتر
+        </Button>
+
         {/* Search Button */}
         <Button
           onClick={handleSearch}
