@@ -21,7 +21,8 @@ export const SearchPage: React.FC = () => {
     const slugMap: Record<ServiceCategory, string> = {
       roadside: 'roadside',
       tire: 'tyre-wheel',
-      recovery: 'recovery-accident'
+      recovery: 'recovery-accident',
+      oil_filter: 'oil-filter'
     };
     navigate(`/c/${slugMap[category]}`);
   };
@@ -36,7 +37,8 @@ export const SearchPage: React.FC = () => {
       const slugMap: Record<ServiceCategory, string> = {
         roadside: 'roadside',
         tire: 'tyre-wheel',
-        recovery: 'recovery-accident'
+        recovery: 'recovery-accident',
+        oil_filter: 'oil-filter'
       };
       navigate(`/c/${slugMap[selectedCategory]}`);
     } else {

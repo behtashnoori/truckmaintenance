@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { CategorySelector } from '@/components/CategorySelector';
 import { VehicleFilter } from '@/components/VehicleFilter';
+import { CityFilter } from '@/components/CityFilter';
 import { ProviderCard } from '@/components/ProviderCard';
 import { Button } from '@/components/ui/button';
 import { api, ProviderSearchResult, ServiceCategory, VehicleType } from '@/lib/api';
@@ -35,6 +36,12 @@ const categoryMap: Record<string, CategoryInfo> = {
     title: 'امداد و حادثه',
     subtitle: 'یدک‌کش و امداد جاده‌ای',
     subcategories: ['یدک‌کش', 'امداد', 'جرثقیل']
+  },
+  'oil-filter': {
+    id: 'oil_filter',
+    title: 'فروش روغن و فیلتر',
+    subtitle: 'عرضه انواع روغن و فیلتر',
+    subcategories: ['روغن موتور', 'فیلتر هوا', 'فیلتر روغن']
   }
 };
 
@@ -50,6 +57,8 @@ export const CategoryPage: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleType | 'all'>('all');
+  const [selectedCity, setSelectedCity] = useState<string>('all');
+  const [cities, setCities] = useState<string[]>([]);
 
   const categoryInfo = slug ? categoryMap[slug] : null;
 
@@ -68,8 +77,8 @@ export const CategoryPage: React.FC = () => {
   }, [lat, lon, categoryInfo]);
 
   useEffect(() => {
-    applyVehicleFilter();
-  }, [selectedVehicle, providers]);
+    applyFilters();
+  }, [selectedVehicle, selectedCity, providers]);
 
   const fetchProviders = async () => {
     if (!categoryInfo) return;
@@ -83,6 +92,8 @@ export const CategoryPage: React.FC = () => {
       // Sort by distance
       const sortedProviders = response.data.sort((a, b) => a.distance_km - b.distance_km);
       setProviders(sortedProviders);
+      const uniqueCities = Array.from(new Set(response.data.map(p => p.city)));
+      setCities(uniqueCities);
     } else {
       setError(response.error || 'خطا در بارگذاری نتایج');
     }
@@ -90,15 +101,19 @@ export const CategoryPage: React.FC = () => {
     setIsLoading(false);
   };
 
-  const applyVehicleFilter = () => {
+  const applyFilters = () => {
     let filtered = providers;
-    
+
     if (selectedVehicle && selectedVehicle !== 'all') {
-      filtered = providers.filter(provider => 
+      filtered = filtered.filter(provider =>
         provider.vehicle_types.includes(selectedVehicle as VehicleType)
       );
     }
-    
+
+    if (selectedCity && selectedCity !== 'all') {
+      filtered = filtered.filter(provider => provider.city === selectedCity);
+    }
+
     setFilteredProviders(filtered);
   };
 
@@ -106,7 +121,8 @@ export const CategoryPage: React.FC = () => {
     const slugMap: Record<ServiceCategory, string> = {
       roadside: 'roadside',
       tire: 'tyre-wheel',
-      recovery: 'recovery-accident'
+      recovery: 'recovery-accident',
+      oil_filter: 'oil-filter'
     };
     
     navigate(`/c/${slugMap[newCategory]}`);
@@ -168,8 +184,17 @@ export const CategoryPage: React.FC = () => {
             onCategorySelect={handleCategoryChange}
             variant="compact"
           />
-          <div className="flex items-center gap-3">
-            <div className="flex-1">
+          <div className="flex items-center gap-3 flex-wrap">
+            {categoryInfo.id === 'oil_filter' && cities.length > 0 && (
+              <div className="flex-1 min-w-[120px]">
+                <CityFilter
+                  cities={cities}
+                  value={selectedCity}
+                  onValueChange={setSelectedCity}
+                />
+              </div>
+            )}
+            <div className="flex-1 min-w-[120px]">
               <VehicleFilter
                 value={selectedVehicle}
                 onValueChange={setSelectedVehicle}

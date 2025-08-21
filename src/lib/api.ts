@@ -1,7 +1,7 @@
 // API Layer for Heavy Vehicle Service PWA
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
-interface ApiResponse<T = any> {
+interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -12,6 +12,7 @@ interface Provider {
   name: string;
   phone: string;
   address: string;
+  city: string;
   distance_km: number;
   categories: ServiceCategory[];
   location: {
@@ -28,6 +29,7 @@ interface ProviderSearchResult {
   name: string;
   phone: string;
   address: string;
+  city: string;
   distance_km: number;
   is_24_7: boolean;
   vehicle_types: VehicleType[];
@@ -35,7 +37,7 @@ interface ProviderSearchResult {
   categories: ServiceCategory[];
 }
 
-type ServiceCategory = 'roadside' | 'tire' | 'recovery';
+type ServiceCategory = 'roadside' | 'tire' | 'recovery' | 'oil_filter';
 type VehicleType = 'truck' | 'semi' | 'bus';
 
 interface OtpRequest {
@@ -74,6 +76,7 @@ const mockProviders: Provider[] = [
     name: 'امداد جاده‌ای آریا',
     phone: '+989121234567',
     address: 'تهران–قم، کیلومتر ۲۵',
+    city: 'تهران',
     distance_km: 3.2,
     categories: ['recovery'],
     location: { lat: 35.7219, lon: 51.3347 },
@@ -86,6 +89,7 @@ const mockProviders: Provider[] = [
     name: 'خدمات لاستیک پارس',
     phone: '+989129876543',
     address: 'اتوبان کرج، نبش خیابان آزادی',
+    city: 'کرج',
     distance_km: 7.8,
     categories: ['tire'],
     location: { lat: 35.7419, lon: 51.3047 },
@@ -98,6 +102,7 @@ const mockProviders: Provider[] = [
     name: 'پارکینگ و رستوران سروش',
     phone: '+989125557890',
     address: 'جاده ساوه، کیلومتر ۱۵',
+    city: 'تهران',
     distance_km: 12.5,
     categories: ['roadside'],
     location: { lat: 35.6719, lon: 51.2747 },
@@ -110,6 +115,7 @@ const mockProviders: Provider[] = [
     name: 'یدک‌کش شبانه‌روزی احمد',
     phone: '+989123456789',
     address: 'بزرگراه آزادگان، خروجی کرج',
+    city: 'تهران',
     distance_km: 5.1,
     categories: ['recovery'],
     location: { lat: 35.6919, lon: 51.2647 },
@@ -122,6 +128,7 @@ const mockProviders: Provider[] = [
     name: 'تعمیرگاه لاستیک شریف',
     phone: '+989127654321',
     address: 'شهر قدس، خیابان امام خمینی',
+    city: 'شهرقدس',
     distance_km: 8.9,
     categories: ['tire'],
     location: { lat: 35.8019, lon: 51.1547 },
@@ -134,6 +141,7 @@ const mockProviders: Provider[] = [
     name: 'مجتمع خدماتی بهشت',
     phone: '+989132223333',
     address: 'جاده اصفهان، کیلومتر ۴۵',
+    city: 'تهران',
     distance_km: 15.2,
     categories: ['roadside'],
     location: { lat: 35.7319, lon: 51.1947 },
@@ -146,6 +154,7 @@ const mockProviders: Provider[] = [
     name: 'امداد سریع کامیون',
     phone: '+989111112222',
     address: 'اتوبان کرج–قزوین، استراحتگاه مهرشهر',
+    city: 'کرج',
     distance_km: 22.0,
     categories: ['recovery'],
     location: { lat: 35.6419, lon: 51.2347 },
@@ -158,6 +167,7 @@ const mockProviders: Provider[] = [
     name: 'لاستیک فروشی رضا',
     phone: '+989144445555',
     address: 'شهریار، میدان امام حسین',
+    city: 'شهریار',
     distance_km: 11.7,
     categories: ['tire'],
     location: { lat: 35.7519, lon: 51.2847 },
@@ -170,6 +180,7 @@ const mockProviders: Provider[] = [
     name: 'جایگاه سوخت و پارکینگ ملی',
     phone: '+989155556666',
     address: 'آزادراه تهران–شمال، کیلومتر ۳۲',
+    city: 'تهران',
     distance_km: 18.4,
     categories: ['roadside'],
     location: { lat: 35.7819, lon: 51.3647 },
@@ -182,12 +193,39 @@ const mockProviders: Provider[] = [
     name: 'خدمات اتوبوسی آسمان',
     phone: '+989166667777',
     address: 'ورامین، خیابان شهید بهشتی',
+    city: 'ورامین',
     distance_km: 25.3,
     categories: ['roadside', 'tire'],
     location: { lat: 35.6119, lon: 51.3947 },
     radius_km: 55,
     is_24_7: false,
     vehicle_types: ['bus']
+  },
+  {
+    id: '11',
+    name: 'فروشگاه روغن پارسیان',
+    phone: '+989177778888',
+    address: 'تهران، خیابان ولیعصر',
+    city: 'تهران',
+    distance_km: 4.5,
+    categories: ['oil_filter'],
+    location: { lat: 35.715, lon: 51.4 },
+    radius_km: 15,
+    is_24_7: false,
+    vehicle_types: ['truck', 'semi', 'bus']
+  },
+  {
+    id: '12',
+    name: 'روغن و فیلتر قزوین',
+    phone: '+989188889999',
+    address: 'قزوین، بلوار اصلی',
+    city: 'قزوین',
+    distance_km: 50.0,
+    categories: ['oil_filter'],
+    location: { lat: 36.27, lon: 50.0 },
+    radius_km: 20,
+    is_24_7: false,
+    vehicle_types: ['truck']
   }
 ];
 
@@ -245,6 +283,7 @@ class ApiClient {
       name: p.name,
       phone: p.phone,
       address: p.address,
+      city: p.city,
       distance_km: p.distance_km,
       is_24_7: p.is_24_7,
       vehicle_types: p.vehicle_types,
