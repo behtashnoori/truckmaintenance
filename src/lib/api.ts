@@ -1,7 +1,7 @@
 // API Layer for Heavy Vehicle Service PWA
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
-interface ApiResponse<T = any> {
+interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -35,7 +35,7 @@ interface ProviderSearchResult {
   categories: ServiceCategory[];
 }
 
-type ServiceCategory = 'roadside' | 'tire' | 'recovery';
+type ServiceCategory = 'roadside' | 'tire' | 'recovery' | 'oil';
 type VehicleType = 'truck' | 'semi' | 'bus';
 
 interface OtpRequest {
@@ -188,6 +188,30 @@ const mockProviders: Provider[] = [
     radius_km: 55,
     is_24_7: false,
     vehicle_types: ['bus']
+  },
+  {
+    id: '11',
+    name: 'روغن فروشی تهران',
+    phone: '+989177788899',
+    address: 'تهران، خیابان انقلاب',
+    distance_km: 4.2,
+    categories: ['oil'],
+    location: { lat: 35.6892, lon: 51.3890 },
+    radius_km: 30,
+    is_24_7: false,
+    vehicle_types: ['truck', 'semi']
+  },
+  {
+    id: '12',
+    name: 'فروشگاه فیلتر اصفهان',
+    phone: '+989188899900',
+    address: 'اصفهان، میدان نقش جهان',
+    distance_km: 3.5,
+    categories: ['oil'],
+    location: { lat: 32.6539, lon: 51.6660 },
+    radius_km: 25,
+    is_24_7: true,
+    vehicle_types: ['truck']
   }
 ];
 
@@ -231,21 +255,42 @@ class ApiClient {
     await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
     
     let filteredProviders = mockProviders;
-    
+
     if (category) {
       filteredProviders = filteredProviders.filter(p => p.categories.includes(category));
     }
-    
+
     if (vehicle) {
       filteredProviders = filteredProviders.filter(p => p.vehicle_types.includes(vehicle));
     }
+
+    const toRad = (value: number) => (value * Math.PI) / 180;
+    const calcDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+      const R = 6371; // km
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    };
+
+    filteredProviders = filteredProviders
+      .map(p => ({
+        ...p,
+        distance_km: calcDistance(lat, lon, p.location.lat, p.location.lon)
+      }))
+      .filter(p => p.distance_km <= p.radius_km)
+      .sort((a, b) => a.distance_km - b.distance_km);
 
     const results: ProviderSearchResult[] = filteredProviders.map(p => ({
       id: p.id,
       name: p.name,
       phone: p.phone,
       address: p.address,
-      distance_km: p.distance_km,
+      distance_km: Math.round(p.distance_km * 10) / 10,
       is_24_7: p.is_24_7,
       vehicle_types: p.vehicle_types,
       radius_km: p.radius_km,

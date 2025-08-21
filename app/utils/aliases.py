@@ -7,6 +7,8 @@ CATEGORY_ALIASES = {
     "tyre-wheel": "tyre-wheel",
     "recovery": "recovery-accident",
     "recovery-accident": "recovery-accident",
+    "oil": "oil-filter",
+    "oil-filter": "oil-filter",
 }
 
 VEHICLE_ALIASES = {
@@ -21,6 +23,7 @@ CATEGORY_CANONICAL_TO_UI = {
     "roadside": "roadside",
     "tyre-wheel": "tyre-wheel",
     "recovery-accident": "recovery",
+    "oil-filter": "oil",
 }
 
 VEHICLE_CANONICAL_TO_UI = {
