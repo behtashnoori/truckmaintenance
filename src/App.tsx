@@ -15,6 +15,7 @@ import { AboutPage } from "./pages/AboutPage";
 import { ContactPage } from "./pages/ContactPage";
 import { PrivacyPolicy } from "./pages/PrivacyPolicy";
 import { TermsOfService } from "./pages/TermsOfService";
+import { OilFilterPage } from "./pages/OilFilterPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/" element={<SearchPage />} />
             <Route path="/c/:slug" element={<CategoryPage />} />
             <Route path="/results" element={<ResultsPage />} />
+            <Route path="/oil-filter" element={<OilFilterPage />} />
             <Route path="/provider/:id" element={<ProviderDetail />} />
             <Route path="/location-error" element={<LocationError />} />
             <Route path="/signup" element={<ProviderSignup />} />

@@ -67,6 +67,10 @@ export const ResultsPage: React.FC = () => {
   };
 
   const handleCategoryChange = (newCategory: ServiceCategory) => {
+    if (newCategory === 'oil') {
+      navigate('/oil-filter');
+      return;
+    }
     const newParams = new URLSearchParams(searchParams);
     newParams.set('category', newCategory);
     setSearchParams(newParams);
