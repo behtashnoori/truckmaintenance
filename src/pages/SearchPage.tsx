@@ -9,7 +9,7 @@ import { MapPin, Search, Truck } from 'lucide-react';
 
 export const SearchPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | undefined>();
-  const { lat, lon, isLoading, error, requestLocation } = useLocation();
+  const { lat, lon, isLoading, error } = useLocation();
   const navigate = useNavigate();
 
   const handleDirectNavigation = (category: ServiceCategory) => {
@@ -65,20 +65,15 @@ export const SearchPage: React.FC = () => {
       <div className="flex-1 p-6 space-y-6">
         {/* Location Status */}
         <div className="bg-card p-4 rounded-lg shadow-card">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center">
             <div className="flex items-center gap-2">
               <MapPin size={20} className="text-primary" />
               <span className="text-mobile-base">
-                {isLoading ? 'در حال یافتن موقعیت...' : 
-                 hasLocation ? 'موقعیت شما تأیید شد' : 
+                {isLoading ? 'در حال یافتن موقعیت...' :
+                 hasLocation ? 'موقعیت شما تأیید شد' :
                  'موقعیت مورد نیاز'}
               </span>
             </div>
-            {!hasLocation && !isLoading && (
-              <Button variant="outline" size="sm" onClick={requestLocation}>
-                تأیید موقعیت
-              </Button>
-            )}
           </div>
           
           {error && (
