@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { CategorySelector } from '@/components/CategorySelector';
 import { VehicleFilter } from '@/components/VehicleFilter';
+import { LocationFilter } from '@/components/LocationFilter';
 import { ProviderCard } from '@/components/ProviderCard';
 import { Button } from '@/components/ui/button';
 import { api, ProviderSearchResult, ServiceCategory, VehicleType } from '@/lib/api';
@@ -20,6 +21,8 @@ export const ResultsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedProvince, setSelectedProvince] = useState<string>('all');
+  const [selectedCity, setSelectedCity] = useState<string>('all');
 
   const lat = parseFloat(searchParams.get('lat') || '0');
   const lon = parseFloat(searchParams.get('lon') || '0');
@@ -37,7 +40,7 @@ export const ResultsPage: React.FC = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [vehicle, allProviders]);
+  }, [vehicle, allProviders, selectedProvince, selectedCity]);
 
   const fetchProviders = async () => {
     setIsLoading(true);
@@ -56,13 +59,21 @@ export const ResultsPage: React.FC = () => {
 
   const applyFilters = () => {
     let filtered = allProviders;
-    
+
+    if (selectedProvince !== 'all') {
+      filtered = filtered.filter(provider => provider.province === selectedProvince);
+    }
+
+    if (selectedCity !== 'all') {
+      filtered = filtered.filter(provider => provider.city === selectedCity);
+    }
+
     if (vehicle && vehicle !== 'all') {
-      filtered = allProviders.filter(provider => 
+      filtered = filtered.filter(provider =>
         provider.vehicle_types.includes(vehicle as VehicleType)
       );
     }
-    
+
     setProviders(filtered);
   };
 
@@ -128,6 +139,13 @@ export const ResultsPage: React.FC = () => {
             selectedCategory={category || undefined}
             onCategorySelect={handleCategoryChange}
             variant="compact"
+          />
+          <LocationFilter
+            providers={allProviders}
+            selectedProvince={selectedProvince}
+            selectedCity={selectedCity}
+            onProvinceChange={setSelectedProvince}
+            onCityChange={setSelectedCity}
           />
           <div className="flex items-center gap-3">
             <div className="flex-1">
