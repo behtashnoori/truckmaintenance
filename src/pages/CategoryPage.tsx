@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { CategorySelector } from '@/components/CategorySelector';
 import { VehicleFilter } from '@/components/VehicleFilter';
+import { LocationSelector } from '@/components/LocationSelector';
 import { ProviderCard } from '@/components/ProviderCard';
 import { Button } from '@/components/ui/button';
 import { api, ProviderSearchResult, ServiceCategory, VehicleType } from '@/lib/api';
@@ -35,8 +36,20 @@ const categoryMap: Record<string, CategoryInfo> = {
     title: 'امداد و حادثه',
     subtitle: 'یدک‌کش و امداد جاده‌ای',
     subcategories: ['یدک‌کش', 'امداد', 'جرثقیل']
+  },
+  'oil-filter': {
+    id: 'oil',
+    title: 'فروش روغن و فیلتر',
+    subtitle: 'نمایندگی‌ها و فروشگاه‌های روغن',
+    subcategories: ['روغن', 'فیلتر', 'لوازم یدکی']
   }
 };
+
+const locations = [
+  { name: 'تهران', lat: 35.6892, lon: 51.3890 },
+  { name: 'اصفهان', lat: 32.6539, lon: 51.6660 },
+  { name: 'مشهد', lat: 36.2605, lon: 59.6168 }
+];
 
 export const CategoryPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -50,22 +63,31 @@ export const CategoryPage: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleType | 'all'>('all');
+  const [manualLocation, setManualLocation] = useState<{lat: number; lon: number} | null>(null);
+  const [selectedLocationName, setSelectedLocationName] = useState<string | undefined>();
 
   const categoryInfo = slug ? categoryMap[slug] : null;
 
   useEffect(() => {
-    if (!lat || !lon) {
-      navigate('/location-error');
-      return;
-    }
-
     if (!categoryInfo) {
       navigate('/');
       return;
     }
 
+    if (categoryInfo.id === 'oil') {
+      if (!manualLocation) {
+        setIsLoading(false);
+        return;
+      }
+    } else {
+      if (!lat || !lon) {
+        navigate('/location-error');
+        return;
+      }
+    }
+
     fetchProviders();
-  }, [lat, lon, categoryInfo]);
+  }, [lat, lon, categoryInfo, manualLocation]);
 
   useEffect(() => {
     applyVehicleFilter();
@@ -73,11 +95,18 @@ export const CategoryPage: React.FC = () => {
 
   const fetchProviders = async () => {
     if (!categoryInfo) return;
-    
+
     setIsLoading(true);
     setError(null);
 
-    const response = await api.searchProviders(lat!, lon!, categoryInfo.id);
+    const searchLat = categoryInfo.id === 'oil' ? manualLocation?.lat : lat!;
+    const searchLon = categoryInfo.id === 'oil' ? manualLocation?.lon : lon!;
+    if (searchLat == null || searchLon == null) {
+      setIsLoading(false);
+      return;
+    }
+
+    const response = await api.searchProviders(searchLat, searchLon, categoryInfo.id);
     
     if (response.success && response.data) {
       // Sort by distance
@@ -106,7 +135,8 @@ export const CategoryPage: React.FC = () => {
     const slugMap: Record<ServiceCategory, string> = {
       roadside: 'roadside',
       tire: 'tyre-wheel',
-      recovery: 'recovery-accident'
+      recovery: 'recovery-accident',
+      oil: 'oil-filter'
     };
     
     navigate(`/c/${slugMap[newCategory]}`);
@@ -175,23 +205,38 @@ export const CategoryPage: React.FC = () => {
                 onValueChange={setSelectedVehicle}
               />
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefreshLocation}
-              disabled={isRefreshing}
-              className="flex items-center gap-2 flex-shrink-0"
-            >
-              <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
-              {isRefreshing ? 'در حال به‌روزرسانی...' : 'به‌روزرسانی موقعیت'}
-            </Button>
+            {categoryInfo.id === 'oil' ? (
+              <LocationSelector
+                locations={locations}
+                value={selectedLocationName}
+                onSelect={(loc) => {
+                  setSelectedLocationName(loc.name);
+                  setManualLocation({ lat: loc.lat, lon: loc.lon });
+                }}
+              />
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefreshLocation}
+                disabled={isRefreshing}
+                className="flex items-center gap-2 flex-shrink-0"
+              >
+                <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+                {isRefreshing ? 'در حال به‌روزرسانی...' : 'به‌روزرسانی موقعیت'}
+              </Button>
+            )}
           </div>
         </div>
       </div>
 
       {/* Results */}
       <div className="flex-1 p-4">
-        {error ? (
+        {categoryInfo.id === 'oil' && !manualLocation ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">لطفاً استان یا شهر را انتخاب کنید</p>
+          </div>
+        ) : error ? (
           <div className="text-center py-8">
             <p className="text-destructive mb-4">{error}</p>
             <Button onClick={fetchProviders} variant="outline">
@@ -203,13 +248,13 @@ export const CategoryPage: React.FC = () => {
             <MapPin size={48} className="mx-auto mb-4 text-muted-foreground" />
             <h3 className="text-lg font-semibold mb-2">هیچ خدماتی یافت نشد</h3>
             <p className="text-muted-foreground mb-4">
-              {selectedVehicle && selectedVehicle !== 'all' 
+              {selectedVehicle && selectedVehicle !== 'all'
                 ? `نتیجه‌ای برای این دسته با فیلتر ${selectedVehicle === 'truck' ? 'کامیون' : selectedVehicle === 'semi' ? 'تریلی' : 'اتوبوس'} پیدا نشد.`
                 : 'در این منطقه ارائه‌دهنده‌ای برای این نوع خدمات یافت نشد'
               }
             </p>
-            <Button 
-              onClick={() => navigate('/')} 
+            <Button
+              onClick={() => navigate('/')}
               variant="outline"
             >
               جستجوی جدید
@@ -225,7 +270,7 @@ export const CategoryPage: React.FC = () => {
                 </span>
               )}
             </div>
-            
+
             {filteredProviders.map((provider) => (
               <ProviderCard key={provider.id} provider={provider} />
             ))}
