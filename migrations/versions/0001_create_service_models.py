@@ -98,6 +98,7 @@ def upgrade() -> None:
             {"slug": "roadside", "name": "roadside"},
             {"slug": "tyre-wheel", "name": "tyre-wheel"},
             {"slug": "recovery-accident", "name": "recovery-accident"},
+            {"slug": "oil-filter", "name": "oil-filter"},
         ],
     )
 
