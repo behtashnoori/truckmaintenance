@@ -111,6 +111,15 @@ export const SearchPage: React.FC = () => {
           جستجوی خدمات
         </Button>
 
+        {/* Oil and Filter Sales */}
+        <Button
+          onClick={() => navigate('/oil-filter')}
+          variant="outline"
+          className="w-full"
+        >
+          فروش روغن و فیلتر
+        </Button>
+
         {/* Provider Registration Link */}
         <div className="text-center pt-4">
           <p className="text-sm text-muted-foreground mb-2">
