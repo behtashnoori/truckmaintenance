@@ -35,6 +35,12 @@ const categoryMap: Record<string, CategoryInfo> = {
     title: 'امداد و حادثه',
     subtitle: 'یدک‌کش و امداد جاده‌ای',
     subcategories: ['یدک‌کش', 'امداد', 'جرثقیل']
+  },
+  'oil-filter': {
+    id: 'oil_filter',
+    title: 'فروش روغن و فیلتر',
+    subtitle: 'عرضه و تعویض روغن و فیلتر',
+    subcategories: ['روغن', 'فیلتر']
   }
 };
 
@@ -103,10 +109,11 @@ export const CategoryPage: React.FC = () => {
   };
 
   const handleCategoryChange = (newCategory: ServiceCategory) => {
-    const slugMap: Record<ServiceCategory, string> = {
+  const slugMap: Record<ServiceCategory, string> = {
       roadside: 'roadside',
       tire: 'tyre-wheel',
-      recovery: 'recovery-accident'
+      recovery: 'recovery-accident',
+      oil_filter: 'oil-filter'
     };
     
     navigate(`/c/${slugMap[newCategory]}`);

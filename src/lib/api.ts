@@ -1,7 +1,7 @@
 // API Layer for Heavy Vehicle Service PWA
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
-interface ApiResponse<T = any> {
+interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -35,7 +35,7 @@ interface ProviderSearchResult {
   categories: ServiceCategory[];
 }
 
-type ServiceCategory = 'roadside' | 'tire' | 'recovery';
+type ServiceCategory = 'roadside' | 'tire' | 'recovery' | 'oil_filter';
 type VehicleType = 'truck' | 'semi' | 'bus';
 
 interface OtpRequest {
@@ -188,6 +188,19 @@ const mockProviders: Provider[] = [
     radius_km: 55,
     is_24_7: false,
     vehicle_types: ['bus']
+  }
+  ,
+  {
+    id: '11',
+    name: 'فروشگاه روغن و فیلتر ایرانیان',
+    phone: '+989177778888',
+    address: 'اتوبان تهران-قم، کیلومتر ۳۰',
+    distance_km: 9.4,
+    categories: ['oil_filter'],
+    location: { lat: 35.7019, lon: 51.3247 },
+    radius_km: 40,
+    is_24_7: false,
+    vehicle_types: ['truck', 'bus']
   }
 ];
 
