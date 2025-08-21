@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { CategorySelector } from '@/components/CategorySelector';
 import { VehicleFilter } from '@/components/VehicleFilter';
+import { LocationFilter } from '@/components/LocationFilter';
 import { ProviderCard } from '@/components/ProviderCard';
 import { Button } from '@/components/ui/button';
 import { api, ProviderSearchResult, ServiceCategory, VehicleType } from '@/lib/api';
@@ -50,6 +51,8 @@ export const CategoryPage: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleType | 'all'>('all');
+  const [selectedProvince, setSelectedProvince] = useState<string>('all');
+  const [selectedCity, setSelectedCity] = useState<string>('all');
 
   const categoryInfo = slug ? categoryMap[slug] : null;
 
@@ -68,8 +71,8 @@ export const CategoryPage: React.FC = () => {
   }, [lat, lon, categoryInfo]);
 
   useEffect(() => {
-    applyVehicleFilter();
-  }, [selectedVehicle, providers]);
+    applyFilters();
+  }, [selectedVehicle, selectedProvince, selectedCity, providers]);
 
   const fetchProviders = async () => {
     if (!categoryInfo) return;
@@ -90,15 +93,23 @@ export const CategoryPage: React.FC = () => {
     setIsLoading(false);
   };
 
-  const applyVehicleFilter = () => {
+  const applyFilters = () => {
     let filtered = providers;
-    
+
+    if (selectedProvince !== 'all') {
+      filtered = filtered.filter(p => p.province === selectedProvince);
+    }
+
+    if (selectedCity !== 'all') {
+      filtered = filtered.filter(p => p.city === selectedCity);
+    }
+
     if (selectedVehicle && selectedVehicle !== 'all') {
-      filtered = providers.filter(provider => 
+      filtered = filtered.filter(provider =>
         provider.vehicle_types.includes(selectedVehicle as VehicleType)
       );
     }
-    
+
     setFilteredProviders(filtered);
   };
 
@@ -167,6 +178,13 @@ export const CategoryPage: React.FC = () => {
             selectedCategory={categoryInfo.id}
             onCategorySelect={handleCategoryChange}
             variant="compact"
+          />
+          <LocationFilter
+            providers={providers}
+            selectedProvince={selectedProvince}
+            selectedCity={selectedCity}
+            onProvinceChange={setSelectedProvince}
+            onCityChange={setSelectedCity}
           />
           <div className="flex items-center gap-3">
             <div className="flex-1">
