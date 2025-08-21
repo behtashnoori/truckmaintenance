@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ServiceCategory } from '@/lib/api';
-import { Truck, Settings, AlertTriangle } from 'lucide-react';
+import { Truck, Settings, AlertTriangle, Droplet } from 'lucide-react';
 
 interface CategorySelectorProps {
   selectedCategory?: ServiceCategory;
@@ -32,6 +32,12 @@ const categories = [
     title: 'امداد و حادثه',
     description: 'یدک‌کش و تعمیرات اضطراری',
     icon: AlertTriangle,
+  },
+  {
+    id: 'oil_filter' as ServiceCategory,
+    title: 'فروش روغن و فیلتر',
+    description: 'عرضه انواع روغن و فیلتر',
+    icon: Droplet,
   },
 ];
 

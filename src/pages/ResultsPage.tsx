@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { CategorySelector } from '@/components/CategorySelector';
 import { VehicleFilter } from '@/components/VehicleFilter';
+import { CityFilter } from '@/components/CityFilter';
 import { ProviderCard } from '@/components/ProviderCard';
 import { Button } from '@/components/ui/button';
 import { api, ProviderSearchResult, ServiceCategory, VehicleType } from '@/lib/api';
@@ -20,6 +21,8 @@ export const ResultsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedCity, setSelectedCity] = useState<string>('all');
+  const [cities, setCities] = useState<string[]>([]);
 
   const lat = parseFloat(searchParams.get('lat') || '0');
   const lon = parseFloat(searchParams.get('lon') || '0');
@@ -37,7 +40,7 @@ export const ResultsPage: React.FC = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [vehicle, allProviders]);
+  }, [vehicle, selectedCity, allProviders]);
 
   const fetchProviders = async () => {
     setIsLoading(true);
@@ -47,6 +50,8 @@ export const ResultsPage: React.FC = () => {
     
     if (response.success && response.data) {
       setAllProviders(response.data);
+      const uniqueCities = Array.from(new Set(response.data.map(p => p.city)));
+      setCities(uniqueCities);
     } else {
       setError(response.error || 'خطا در بارگذاری نتایج');
     }
@@ -58,11 +63,15 @@ export const ResultsPage: React.FC = () => {
     let filtered = allProviders;
     
     if (vehicle && vehicle !== 'all') {
-      filtered = allProviders.filter(provider => 
+      filtered = filtered.filter(provider =>
         provider.vehicle_types.includes(vehicle as VehicleType)
       );
     }
-    
+
+    if (selectedCity && selectedCity !== 'all') {
+      filtered = filtered.filter(p => p.city === selectedCity);
+    }
+
     setProviders(filtered);
   };
 
@@ -124,13 +133,22 @@ export const ResultsPage: React.FC = () => {
       {/* Filter Bar */}
       <div className="sticky top-16 z-40 bg-background/95 backdrop-blur-sm border-b p-4">
         <div className="space-y-3">
-          <CategorySelector
-            selectedCategory={category || undefined}
-            onCategorySelect={handleCategoryChange}
-            variant="compact"
-          />
-          <div className="flex items-center gap-3">
-            <div className="flex-1">
+      <CategorySelector
+        selectedCategory={category || undefined}
+        onCategorySelect={handleCategoryChange}
+        variant="compact"
+      />
+          <div className="flex items-center gap-3 flex-wrap">
+            {category === 'oil_filter' && cities.length > 0 && (
+              <div className="flex-1 min-w-[120px]">
+                <CityFilter
+                  cities={cities}
+                  value={selectedCity}
+                  onValueChange={setSelectedCity}
+                />
+              </div>
+            )}
+            <div className="flex-1 min-w-[120px]">
               <VehicleFilter
                 value={(vehicle as VehicleType) || 'all'}
                 onValueChange={handleVehicleChange}
@@ -147,8 +165,8 @@ export const ResultsPage: React.FC = () => {
               {isRefreshing ? 'در حال به‌روزرسانی...' : 'به‌روزرسانی موقعیت'}
             </Button>
           </div>
-        </div>
       </div>
+    </div>
 
       {/* Results */}
       <div className="flex-1 p-4">
