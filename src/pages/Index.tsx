@@ -9,9 +9,7 @@ const Index = () => {
   ];
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center bg-background bg-[url('/truck-bg.svg')] bg-cover bg-center bg-no-repeat"
-    >
+    <div className="min-h-screen flex items-center justify-center gradient-hero">
       <div className="grid grid-cols-2 gap-4 w-full max-w-md p-4">
         {menuItems.map((item) => (
           <Link
