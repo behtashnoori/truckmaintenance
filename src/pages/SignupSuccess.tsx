@@ -69,8 +69,8 @@ export const SignupSuccess: React.FC = () => {
 
           {/* Action Buttons */}
           <div className="space-y-3">
-            <Button 
-              onClick={() => navigate('/')}
+            <Button
+              onClick={() => navigate('/services')}
               className="w-full"
               size="lg"
               variant="hero"

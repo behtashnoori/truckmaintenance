@@ -70,7 +70,7 @@ export const CategoryPage: React.FC = () => {
 
   useEffect(() => {
     if (!categoryInfo) {
-      navigate('/');
+      navigate('/services');
       return;
     }
 
@@ -254,7 +254,7 @@ export const CategoryPage: React.FC = () => {
               }
             </p>
             <Button
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/services')}
               variant="outline"
             >
               جستجوی جدید

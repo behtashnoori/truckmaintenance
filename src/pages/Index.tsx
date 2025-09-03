@@ -1,11 +1,25 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { Link } from 'react-router-dom';
 
 const Index = () => {
+  const menuItems = [
+    { title: 'خانه', path: '/' },
+    { title: 'خدمات', path: '/services' },
+    { title: 'درباره', path: '/about' },
+    { title: 'تماس با ما', path: '/contact' },
+  ];
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+      <div className="grid grid-cols-2 gap-4 w-full max-w-md p-4">
+        {menuItems.map((item) => (
+          <Link
+            key={item.title}
+            to={item.path}
+            className="bg-card rounded-lg shadow-card flex items-center justify-center p-6 text-lg font-medium hover:bg-accent transition-colors"
+          >
+            {item.title}
+          </Link>
+        ))}
       </div>
     </div>
   );
