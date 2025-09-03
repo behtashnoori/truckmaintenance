@@ -315,22 +315,42 @@ class ApiClient {
 
   // Request OTP for phone verification
   async requestOtp(phone: string): Promise<ApiResponse<{ success: boolean }>> {
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Mock success response
-    return { success: true, data: { success: true } };
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/request-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        return { success: false, error: err.error || res.statusText };
+      }
+      return { success: true, data: { success: true } };
+    } catch {
+      return { success: false, error: 'network_error' };
+    }
   }
 
   // Verify OTP code
-  async verifyOtp(phone: string, code: string): Promise<ApiResponse<{ token: string }>> {
-    await new Promise(resolve => setTimeout(resolve, 600));
-
-    // Mock verification - accept any 6-digit code
-    if (code.length === 6) {
-      return { success: true, data: { token: 'mock-jwt-token' } };
+  async verifyOtp(
+    phone: string,
+    code: string
+  ): Promise<ApiResponse<{ token: string }>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, code }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        return { success: false, error: err.error || res.statusText };
+      }
+      const data = await res.json();
+      return { success: true, data };
+    } catch {
+      return { success: false, error: 'network_error' };
     }
-
-    return { success: false, error: 'کد تأیید نامعتبر است' };
   }
 
   // Register company information
@@ -338,9 +358,24 @@ class ApiClient {
     data: CompanyRegistration,
     token: string
   ): Promise<ApiResponse<{ id: string }>> {
-    await new Promise(resolve => setTimeout(resolve, 600));
-
-    return { success: true, data: { id: '1' } };
+    try {
+      const res = await fetch(`${API_BASE_URL}/providers/company`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        return { success: false, error: err.error || res.statusText };
+      }
+      const result = await res.json();
+      return { success: true, data: result };
+    } catch {
+      return { success: false, error: 'network_error' };
+    }
   }
 
   // Register new provider
@@ -371,10 +406,11 @@ export const getProvider = (id: string) => api.getProvider(id);
 
 export const requestOTP = (phone: string) => api.requestOtp(phone);
 
-export const verifyOTP = (phone: string, code: string) => api.verifyOtp(phone, code);
+export const verifyOTP = (phone: string, code: string) =>
+  api.verifyOtp(phone, code);
 
-export const createCompany = (data: CompanyRegistration, token?: string) =>
-  api.registerCompany(data, token || 'mock-token');
+export const createCompany = (data: CompanyRegistration, token: string) =>
+  api.registerCompany(data, token);
 
 export const createProvider = (data: ProviderRegistration, token?: string) =>
   api.registerProvider(data, token || 'mock-token');
