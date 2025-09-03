@@ -2,10 +2,15 @@
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <div
+      className="min-h-screen flex items-center justify-center bg-center bg-repeat"
+      style={{ backgroundImage: "url('/maintenance-bg.svg')" }}
+    >
+      <div className="bg-black/60 p-8 rounded text-center">
+        <h1 className="text-4xl font-bold mb-4 text-white">Truck Maintenance Finder</h1>
+        <p className="text-xl text-gray-200">
+          Locate service providers for heavy vehicles.
+        </p>
       </div>
     </div>
   );
