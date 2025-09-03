@@ -281,6 +281,9 @@ export const ProviderSignup: React.FC = () => {
                     multiSelect={true}
                     selectedCategories={selectedCategories}
                   />
+                  <p className="text-sm text-muted-foreground mt-2">
+                    حداقل یک دسته خدمات انتخاب کنید
+                  </p>
                 </CardContent>
               </Card>
 
