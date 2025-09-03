@@ -4,11 +4,13 @@
       <stop offset="0%" stop-color="#f1f5f9" />
       <stop offset="100%" stop-color="#e2e8f0" />
     </linearGradient>
+    <pattern id="tools" width="120" height="120" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <path d="M20 20l40 40m0-40l-40 40" stroke="#cbd5e1" stroke-width="8" stroke-linecap="round" />
+      <path d="M80 20l40 40m0-40l-40 40" stroke="#cbd5e1" stroke-width="8" stroke-linecap="round" />
+      <path d="M20 80l40 40m0-40l-40 40" stroke="#cbd5e1" stroke-width="8" stroke-linecap="round" />
+      <path d="M80 80l40 40m0-40l-40 40" stroke="#cbd5e1" stroke-width="8" stroke-linecap="round" />
+    </pattern>
   </defs>
   <rect width="1440" height="1024" fill="url(#bg)" />
-  <g fill="none" stroke="#cbd5e1" stroke-width="8" opacity="0.4" stroke-linejoin="round" stroke-linecap="round">
-    <path d="M200 700h500l80 120h360v-160h-60l-120-200H200z" />
-    <circle cx="420" cy="820" r="60" />
-    <circle cx="740" cy="820" r="60" />
-  </g>
+  <rect width="1440" height="1024" fill="url(#tools)" opacity="0.3" />
 </svg>

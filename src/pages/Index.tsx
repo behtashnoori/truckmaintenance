@@ -9,19 +9,19 @@ const Index = () => {
   ];
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center bg-background bg-[url('/truck-bg.svg')] bg-cover bg-center bg-no-repeat"
-    >
-      <div className="grid grid-cols-2 gap-4 w-full max-w-md p-4">
-        {menuItems.map((item) => (
-          <Link
-            key={item.title}
-            to={item.path}
-            className="bg-card rounded-lg shadow-card flex items-center justify-center p-6 text-lg font-medium hover:bg-accent transition-colors"
-          >
-            {item.title}
-          </Link>
-        ))}
+    <div className="min-h-screen flex items-center justify-center bg-background bg-[url('/truck-bg.svg')] bg-cover bg-center bg-no-repeat">
+      <div className="p-1 rounded-xl gradient-hero shadow-card">
+        <div className="grid grid-cols-2 gap-4 w-full max-w-md p-4 bg-card rounded-lg">
+          {menuItems.map((item) => (
+            <Link
+              key={item.title}
+              to={item.path}
+              className="bg-card rounded-lg shadow-card flex items-center justify-center p-6 text-lg font-medium hover:bg-accent transition-colors"
+            >
+              {item.title}
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );
