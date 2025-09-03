@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { CategorySelector } from '@/components/CategorySelector';
 import { Header } from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ServiceCategory, VehicleType, requestOTP, verifyOTP, createProvider } from '@/lib/api';
+import { ServiceCategory, VehicleType, requestOTP, verifyOTP, createProvider, createCompany } from '@/lib/api';
 import { Phone, Building, Radius, Clock, Truck, Bus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -98,7 +98,7 @@ export const ProviderSignup: React.FC = () => {
     }
   };
 
-  const handleCompanySubmit = () => {
+  const handleCompanySubmit = async () => {
     if (!companyName.trim()) {
       toast({
         title: "خطا",
@@ -107,7 +107,20 @@ export const ProviderSignup: React.FC = () => {
       });
       return;
     }
-    setCurrentStep('details');
+
+    setIsLoading(true);
+    try {
+      await createCompany({ name: companyName, phone });
+      setCurrentStep('details');
+    } catch (error) {
+      toast({
+        title: "خطا در ثبت شرکت",
+        description: "لطفاً دوباره تلاش کنید",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSubmit = async () => {
