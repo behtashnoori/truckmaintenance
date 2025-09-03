@@ -5,7 +5,7 @@ import { CategorySelector } from '@/components/CategorySelector';
 import { Footer } from '@/components/Footer';
 import { useLocation } from '@/contexts/LocationContext';
 import { ServiceCategory } from '@/lib/api';
-import { MapPin, Search, Truck } from 'lucide-react';
+import { MapPin, Search, Truck, Home } from 'lucide-react';
 
 export const SearchPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | undefined>();
@@ -126,6 +126,16 @@ export const SearchPage: React.FC = () => {
             ثبت‌نام ارائه‌دهنده
           </Button>
         </div>
+
+        {/* Back to Main Menu */}
+        <Button
+          variant="outline"
+          onClick={() => navigate('/')}
+          className="w-full"
+        >
+          <Home className="ml-2" size={20} />
+          بازگشت به منوی اصلی
+        </Button>
       </div>
 
       <Footer />
