@@ -10,14 +10,8 @@ import { CategorySelector } from '@/components/CategorySelector';
 import { Header } from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ServiceCategory, VehicleType, requestOTP, verifyOTP, createProvider } from '@/lib/api';
-import { MapPin, Phone, Building, Radius, Clock, Truck, Bus } from 'lucide-react';
+import { Phone, Building, Radius, Clock, Truck, Bus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-interface LocationData {
-  lat: number;
-  lon: number;
-  address: string;
-}
 
 export const ProviderSignup: React.FC = () => {
   const navigate = useNavigate();
@@ -34,7 +28,6 @@ export const ProviderSignup: React.FC = () => {
   // Business details
   const [businessName, setBusinessName] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<ServiceCategory[]>([]);
-  const [location, setLocation] = useState<LocationData | null>(null);
   const [radius, setRadius] = useState('50');
   const [is24_7, setIs24_7] = useState(false);
   const [selectedVehicleTypes, setSelectedVehicleTypes] = useState<VehicleType[]>([]);
@@ -97,41 +90,6 @@ export const ProviderSignup: React.FC = () => {
     }
   };
 
-  const handleGetCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      toast({
-        title: "خطا",
-        description: "مرورگر شما از موقعیت‌یابی پشتیبانی نمی‌کند",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLocation({
-          lat: position.coords.latitude,
-          lon: position.coords.longitude,
-          address: `عرض: ${position.coords.latitude.toFixed(6)}, طول: ${position.coords.longitude.toFixed(6)}`
-        });
-        setIsLoading(false);
-        toast({
-          title: "موقعیت تأیید شد",
-          description: "موقعیت فعلی شما ثبت شد",
-        });
-      },
-      (error) => {
-        setIsLoading(false);
-        toast({
-          title: "خطا در دریافت موقعیت",
-          description: "لطفاً دسترسی به موقعیت را مجاز کنید",
-          variant: "destructive",
-        });
-      }
-    );
-  };
-
   const handleSubmit = async () => {
     if (!businessName.trim()) {
       toast({
@@ -151,15 +109,6 @@ export const ProviderSignup: React.FC = () => {
       return;
     }
 
-    if (!location) {
-      toast({
-        title: "خطا",
-        description: "لطفاً موقعیت خود را مشخص کنید",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (selectedVehicleTypes.length === 0) {
       toast({
         title: "خطا",
@@ -174,10 +123,6 @@ export const ProviderSignup: React.FC = () => {
       await createProvider({
         name: businessName,
         phone,
-        location: {
-          lat: location.lat,
-          lon: location.lon
-        },
         radius_km: parseInt(radius),
         categories: selectedCategories,
         is_24_7: is24_7,
@@ -339,32 +284,15 @@ export const ProviderSignup: React.FC = () => {
                 </CardContent>
               </Card>
 
-              {/* Location */}
+              {/* Service Radius */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <MapPin size={20} />
-                    موقعیت و شعاع فعالیت
+                    <Radius size={20} />
+                    شعاع فعالیت
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {!location ? (
-                    <Button 
-                      onClick={handleGetCurrentLocation}
-                      disabled={isLoading}
-                      variant="outline"
-                      className="w-full"
-                    >
-                      <MapPin className="ml-2" size={16} />
-                      {isLoading ? 'در حال دریافت موقعیت...' : 'دریافت موقعیت فعلی'}
-                    </Button>
-                  ) : (
-                    <div className="p-3 bg-muted rounded-lg">
-                      <p className="text-sm text-muted-foreground">موقعیت ثبت‌شده:</p>
-                      <p className="text-sm font-mono">{location.address}</p>
-                    </div>
-                  )}
-                  
                   <div>
                     <Label htmlFor="radius" className="flex items-center gap-2">
                       <Radius size={16} />
@@ -459,7 +387,7 @@ export const ProviderSignup: React.FC = () => {
               {/* Submit */}
               <Button 
                 onClick={handleSubmit}
-                disabled={isLoading || !businessName.trim() || selectedCategories.length === 0 || !location || selectedVehicleTypes.length === 0}
+                disabled={isLoading || !businessName.trim() || selectedCategories.length === 0 || selectedVehicleTypes.length === 0}
                 className="w-full"
                 size="lg"
                 variant="hero"
