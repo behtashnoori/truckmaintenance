@@ -50,10 +50,6 @@ interface OtpVerify {
 interface ProviderRegistration {
   name: string;
   phone: string;
-  location: {
-    lat: number;
-    lon: number;
-  };
   radius_km: number;
   categories: ServiceCategory[];
   is_24_7: boolean;
