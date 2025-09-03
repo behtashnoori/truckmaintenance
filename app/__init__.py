@@ -1,7 +1,8 @@
 import logging
 import json
+from pathlib import Path
 
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_cors import CORS
 
 from .config import ENV, DEBUG, FRONTEND_ORIGINS
@@ -38,9 +39,17 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(providers_bp, url_prefix="/providers")
 
-    @app.route("/")
-    def index():
-        """Basic index route to avoid 404 on root requests."""
+    dist_dir = Path(__file__).resolve().parent.parent / "dist"
+
+    @app.route("/", defaults={"path": ""})
+    @app.route("/<path:path>")
+    def index(path: str):
+        """Serve the built frontend for root and client-side routes."""
+        if dist_dir.exists():
+            file_path = dist_dir / path
+            if path and file_path.exists():
+                return send_from_directory(dist_dir, path)
+            return send_from_directory(dist_dir, "index.html")
         return {"status": "ok"}
 
     @app.route("/health")
