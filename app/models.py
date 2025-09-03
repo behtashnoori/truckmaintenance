@@ -32,6 +32,14 @@ class VehicleType(Base):
     name = Column(String(100), nullable=False)
 
 
+class Company(Base):
+    __tablename__ = "company"
+
+    id = Column(Integer, primary_key=True)
+    tel = Column(String(20), unique=True, nullable=False)
+    name = Column(String(255), nullable=False)
+
+
 provider_category = Table(
     "provider_category",
     Base.metadata,
