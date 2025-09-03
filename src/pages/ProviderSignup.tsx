@@ -18,7 +18,8 @@ export const ProviderSignup: React.FC = () => {
   const { toast } = useToast();
   
   // Step management
-  const [currentStep, setCurrentStep] = useState<'phone' | 'otp' | 'details'>('phone');
+  const [currentStep, setCurrentStep] =
+    useState<'phone' | 'otp' | 'company' | 'details'>('phone');
   
   // Phone & OTP
   const [phone, setPhone] = useState('');
@@ -26,7 +27,14 @@ export const ProviderSignup: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   
   // Business details
-  const [businessName, setBusinessName] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const steps: Array<'phone' | 'otp' | 'company' | 'details'> = [
+    'phone',
+    'otp',
+    'company',
+    'details',
+  ];
+  const currentIndex = steps.indexOf(currentStep);
   const [selectedCategories, setSelectedCategories] = useState<ServiceCategory[]>([]);
   const [radius, setRadius] = useState('50');
   const [is24_7, setIs24_7] = useState(false);
@@ -74,10 +82,10 @@ export const ProviderSignup: React.FC = () => {
     setIsLoading(true);
     try {
       await verifyOTP(phone, otp);
-      setCurrentStep('details');
+      setCurrentStep('company');
       toast({
         title: "شماره تأیید شد",
-        description: "اکنون اطلاعات کسب‌وکار خود را وارد کنید",
+        description: "نام شرکت خود را وارد کنید",
       });
     } catch (error) {
       toast({
@@ -90,11 +98,23 @@ export const ProviderSignup: React.FC = () => {
     }
   };
 
-  const handleSubmit = async () => {
-    if (!businessName.trim()) {
+  const handleCompanySubmit = () => {
+    if (!companyName.trim()) {
       toast({
         title: "خطا",
-        description: "لطفاً نام کسب‌وکار را وارد کنید",
+        description: "لطفاً نام شرکت را وارد کنید",
+        variant: "destructive",
+      });
+      return;
+    }
+    setCurrentStep('details');
+  };
+
+  const handleSubmit = async () => {
+    if (!companyName.trim()) {
+      toast({
+        title: "خطا",
+        description: "لطفاً نام شرکت را وارد کنید",
         variant: "destructive",
       });
       return;
@@ -121,7 +141,7 @@ export const ProviderSignup: React.FC = () => {
     setIsLoading(true);
     try {
       await createProvider({
-        name: businessName,
+        name: companyName,
         phone,
         radius_km: parseInt(radius),
         categories: selectedCategories,
@@ -165,9 +185,14 @@ export const ProviderSignup: React.FC = () => {
         <div className="max-w-md mx-auto space-y-6">
           {/* Progress Indicator */}
           <div className="flex justify-center space-x-2 mb-6">
-            <div className={`w-3 h-3 rounded-full ${currentStep === 'phone' ? 'bg-primary' : currentStep === 'otp' || currentStep === 'details' ? 'bg-primary' : 'bg-muted'}`} />
-            <div className={`w-3 h-3 rounded-full ${currentStep === 'otp' ? 'bg-primary' : currentStep === 'details' ? 'bg-primary' : 'bg-muted'}`} />
-            <div className={`w-3 h-3 rounded-full ${currentStep === 'details' ? 'bg-primary' : 'bg-muted'}`} />
+            {steps.map((step, idx) => (
+              <div
+                key={step}
+                className={`w-3 h-3 rounded-full ${
+                  idx <= currentIndex ? 'bg-primary' : 'bg-muted'
+                }`}
+              />
+            ))}
           </div>
 
           {/* Phone Step */}
@@ -245,30 +270,40 @@ export const ProviderSignup: React.FC = () => {
             </Card>
           )}
 
+          {/* Company Step */}
+          {currentStep === 'company' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building size={20} />
+                  ثبت نام شرکت
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="companyName">نام شرکت</Label>
+                  <Input
+                    id="companyName"
+                    placeholder="نام شرکت"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                  />
+                </div>
+                <Button
+                  onClick={handleCompanySubmit}
+                  disabled={isLoading || !companyName.trim()}
+                  className="w-full"
+                  size="lg"
+                >
+                  ادامه
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Details Step */}
           {currentStep === 'details' && (
             <div className="space-y-6">
-              {/* Business Info */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Building size={20} />
-                    اطلاعات کسب‌وکار
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="businessName">نام کسب‌وکار</Label>
-                    <Input
-                      id="businessName"
-                      placeholder="نام شرکت یا کارگاه"
-                      value={businessName}
-                      onChange={(e) => setBusinessName(e.target.value)}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
               {/* Services */}
               <Card>
                 <CardHeader>
@@ -388,9 +423,13 @@ export const ProviderSignup: React.FC = () => {
               </Card>
 
               {/* Submit */}
-              <Button 
+              <Button
                 onClick={handleSubmit}
-                disabled={isLoading || !businessName.trim() || selectedCategories.length === 0 || selectedVehicleTypes.length === 0}
+                disabled={
+                  isLoading ||
+                  selectedCategories.length === 0 ||
+                  selectedVehicleTypes.length === 0
+                }
                 className="w-full"
                 size="lg"
                 variant="hero"
