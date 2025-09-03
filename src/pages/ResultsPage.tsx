@@ -169,8 +169,8 @@ export const ResultsPage: React.FC = () => {
                 : 'در این منطقه ارائه‌دهنده‌ای برای این نوع خدمات یافت نشد'
               }
             </p>
-            <Button 
-              onClick={() => navigate('/')} 
+            <Button
+              onClick={() => navigate('/services')}
               variant="outline"
             >
               جستجوی جدید

@@ -40,7 +40,7 @@ export const LocationError: React.FC = () => {
     await new Promise(resolve => setTimeout(resolve, 500));
     
     setIsSubmitting(false);
-    navigate('/');
+    navigate('/services');
   };
 
   return (
