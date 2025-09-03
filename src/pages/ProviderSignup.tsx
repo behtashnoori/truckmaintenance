@@ -25,6 +25,7 @@ export const ProviderSignup: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [token, setToken] = useState('');
   
   // Business details
   const [companyName, setCompanyName] = useState('');
@@ -81,7 +82,11 @@ export const ProviderSignup: React.FC = () => {
 
     setIsLoading(true);
     try {
-      await verifyOTP(phone, otp);
+      const res = await verifyOTP(phone, otp);
+      if (!res.success || !res.data) {
+        throw new Error(res.error);
+      }
+      setToken(res.data.token);
       setCurrentStep('company');
       toast({
         title: "شماره تأیید شد",
@@ -110,7 +115,7 @@ export const ProviderSignup: React.FC = () => {
 
     setIsLoading(true);
     try {
-      await createCompany({ name: companyName, phone });
+      await createCompany({ name: companyName, phone }, token);
       setCurrentStep('details');
     } catch (error) {
       toast({
