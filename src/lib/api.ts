@@ -56,6 +56,11 @@ interface ProviderRegistration {
   vehicle_types: VehicleType[];
 }
 
+interface CompanyRegistration {
+  name: string;
+  phone: string;
+}
+
 interface ContactForm {
   name: string;
   email: string;
@@ -319,13 +324,23 @@ class ApiClient {
   // Verify OTP code
   async verifyOtp(phone: string, code: string): Promise<ApiResponse<{ token: string }>> {
     await new Promise(resolve => setTimeout(resolve, 600));
-    
+
     // Mock verification - accept any 6-digit code
     if (code.length === 6) {
       return { success: true, data: { token: 'mock-jwt-token' } };
     }
 
     return { success: false, error: 'کد تأیید نامعتبر است' };
+  }
+
+  // Register company information
+  async registerCompany(
+    data: CompanyRegistration,
+    token: string
+  ): Promise<ApiResponse<{ id: string }>> {
+    await new Promise(resolve => setTimeout(resolve, 600));
+
+    return { success: true, data: { id: '1' } };
   }
 
   // Register new provider
@@ -358,9 +373,20 @@ export const requestOTP = (phone: string) => api.requestOtp(phone);
 
 export const verifyOTP = (phone: string, code: string) => api.verifyOtp(phone, code);
 
-export const createProvider = (data: ProviderRegistration, token?: string) => 
+export const createCompany = (data: CompanyRegistration, token?: string) =>
+  api.registerCompany(data, token || 'mock-token');
+
+export const createProvider = (data: ProviderRegistration, token?: string) =>
   api.registerProvider(data, token || 'mock-token');
 
 export const submitContactForm = (data: ContactForm) => api.submitContact(data);
 
-export type { Provider, ProviderSearchResult, ServiceCategory, VehicleType, ProviderRegistration, ContactForm };
+export type {
+  Provider,
+  ProviderSearchResult,
+  ServiceCategory,
+  VehicleType,
+  ProviderRegistration,
+  CompanyRegistration,
+  ContactForm,
+};

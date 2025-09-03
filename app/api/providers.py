@@ -34,6 +34,32 @@ def _auth_phone():
     return payload.get("phone")
 
 
+@bp.post("/company")
+def register_company():
+    """Store company information using a verified phone JWT."""
+    token_phone = _auth_phone()
+    if not token_phone:
+        return json_error("unauthorized", "invalid or missing token", 401)
+
+    data = request.get_json() or {}
+    name = data.get("name")
+    phone = data.get("phone")
+    if not all([name, phone]):
+        return json_error("invalid_request", "missing fields")
+    if phone != token_phone:
+        return json_error("phone_mismatch", "phone mismatch", 401)
+
+    db = get_db()
+    company = db.execute(select(Company).where(Company.tel == phone)).scalar_one_or_none()
+    if company:
+        company.name = name
+    else:
+        company = Company(name=name, tel=phone)
+        db.add(company)
+    db.commit()
+    return {"id": company.id}
+
+
 @bp.post("/")
 def register_provider():
     """Register a new provider using a verified phone JWT."""
