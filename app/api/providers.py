@@ -7,7 +7,7 @@ from geoalchemy2 import WKTElement
 
 from ..config import JWT_SECRET
 from ..db import get_db
-from ..models import Provider, ServiceCategory, VehicleType
+from ..models import Company, Provider, ServiceCategory, VehicleType
 from ..utils.aliases import (
     normalize_category,
     normalize_vehicle,
@@ -87,6 +87,11 @@ def register_provider():
     ).scalars().all()
     if len(vehicles_db) != len(set(veh_slugs)):
         return json_error("unknown_vehicle_type", "unknown vehicle type")
+
+    company = db.execute(select(Company).where(Company.tel == phone)).scalar_one_or_none()
+    if not company:
+        company = Company(name=name, tel=phone)
+        db.add(company)
 
     point = WKTElement(f"POINT({lon} {lat})", srid=4326)
     provider = Provider(
