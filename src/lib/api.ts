@@ -314,23 +314,19 @@ class ApiClient {
   }
 
   // Request OTP for phone verification
-  async requestOtp(phone: string): Promise<ApiResponse<{ success: boolean }>> {
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Mock success response
-    return { success: true, data: { success: true } };
+  async requestOtp(phone: string): Promise<ApiResponse<{ code?: string }>> {
+    return this.request('/auth/request-otp', {
+      method: 'POST',
+      body: JSON.stringify({ phone })
+    });
   }
 
   // Verify OTP code
   async verifyOtp(phone: string, code: string): Promise<ApiResponse<{ token: string }>> {
-    await new Promise(resolve => setTimeout(resolve, 600));
-
-    // Mock verification - accept any 6-digit code
-    if (code.length === 6) {
-      return { success: true, data: { token: 'mock-jwt-token' } };
-    }
-
-    return { success: false, error: 'کد تأیید نامعتبر است' };
+    return this.request('/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ phone, code })
+    });
   }
 
   // Register company information
@@ -338,9 +334,13 @@ class ApiClient {
     data: CompanyRegistration,
     token: string
   ): Promise<ApiResponse<{ id: string }>> {
-    await new Promise(resolve => setTimeout(resolve, 600));
-
-    return { success: true, data: { id: '1' } };
+    return this.request('/providers/company', {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
   }
 
   // Register new provider
@@ -348,9 +348,13 @@ class ApiClient {
     data: ProviderRegistration,
     token: string
   ): Promise<ApiResponse<{ status: string }>> {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    return { success: true, data: { status: 'pending' } };
+    return this.request('/providers', {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
   }
 
   // Submit contact form
@@ -373,11 +377,11 @@ export const requestOTP = (phone: string) => api.requestOtp(phone);
 
 export const verifyOTP = (phone: string, code: string) => api.verifyOtp(phone, code);
 
-export const createCompany = (data: CompanyRegistration, token?: string) =>
-  api.registerCompany(data, token || 'mock-token');
+export const createCompany = (data: CompanyRegistration, token: string) =>
+  api.registerCompany(data, token);
 
-export const createProvider = (data: ProviderRegistration, token?: string) =>
-  api.registerProvider(data, token || 'mock-token');
+export const createProvider = (data: ProviderRegistration, token: string) =>
+  api.registerProvider(data, token);
 
 export const submitContactForm = (data: ContactForm) => api.submitContact(data);
 
