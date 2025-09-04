@@ -115,7 +115,9 @@ def register_provider():
         return json_error("unknown_vehicle_type", "unknown vehicle type")
 
     company = db.execute(select(Company).where(Company.tel == phone)).scalar_one_or_none()
-    if not company:
+    if company:
+        company.name = name
+    else:
         company = Company(name=name, tel=phone)
         db.add(company)
 
