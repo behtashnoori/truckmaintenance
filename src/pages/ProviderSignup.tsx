@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ServiceCategory, VehicleType, requestOTP, verifyOTP, createProvider, createCompany } from '@/lib/api';
 import { Phone, Building, Radius, Clock, Truck, Bus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { toEnglishDigits } from '@/lib/utils';
 
 export const ProviderSignup: React.FC = () => {
   const navigate = useNavigate();
@@ -42,10 +43,11 @@ export const ProviderSignup: React.FC = () => {
   const [selectedVehicleTypes, setSelectedVehicleTypes] = useState<VehicleType[]>([]);
 
   const handleSendOTP = async () => {
-    if (!phone.trim()) {
+    const normalizedPhone = toEnglishDigits(phone).replace(/\D/g, '');
+    if (normalizedPhone.length !== 11) {
       toast({
         title: "خطا",
-        description: "لطفاً شماره تلفن را وارد کنید",
+        description: "لطفاً شماره تلفن معتبر وارد کنید",
         variant: "destructive",
       });
       return;
@@ -53,8 +55,9 @@ export const ProviderSignup: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const res = await requestOTP(phone);
+      const res = await requestOTP(normalizedPhone);
       if (res.success) {
+        setPhone(normalizedPhone);
         setCurrentStep('otp');
         toast({
           title: "کد تأیید ارسال شد",
@@ -250,14 +253,18 @@ export const ProviderSignup: React.FC = () => {
                     type="tel"
                     placeholder="09123456789"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) =>
+                      setPhone(
+                        toEnglishDigits(e.target.value).replace(/\D/g, '')
+                      )
+                    }
                     className="ltr text-right"
                     maxLength={11}
                   />
                 </div>
-                <Button 
+                <Button
                   onClick={handleSendOTP}
-                  disabled={isLoading || !phone.trim()}
+                  disabled={isLoading || phone.length !== 11}
                   className="w-full"
                   size="lg"
                 >
