@@ -25,6 +25,7 @@ export const ProviderSignup: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [authToken, setAuthToken] = useState<string | null>(null);
   
   // Business details
   const [companyName, setCompanyName] = useState('');
@@ -52,12 +53,16 @@ export const ProviderSignup: React.FC = () => {
 
     setIsLoading(true);
     try {
-      await requestOTP(phone);
-      setCurrentStep('otp');
-      toast({
-        title: "کد تأیید ارسال شد",
-        description: "کد ۶ رقمی به شماره شما پیامک شد",
-      });
+      const res = await requestOTP(phone);
+      if (res.success) {
+        setCurrentStep('otp');
+        toast({
+          title: "کد تأیید ارسال شد",
+          description: "کد ۶ رقمی به شماره شما پیامک شد",
+        });
+      } else {
+        throw new Error(res.error || '');
+      }
     } catch (error) {
       toast({
         title: "خطا در ارسال کد",
@@ -81,12 +86,17 @@ export const ProviderSignup: React.FC = () => {
 
     setIsLoading(true);
     try {
-      await verifyOTP(phone, otp);
-      setCurrentStep('company');
-      toast({
-        title: "شماره تأیید شد",
-        description: "نام شرکت خود را وارد کنید",
-      });
+      const res = await verifyOTP(phone, otp);
+      if (res.success && res.data) {
+        setAuthToken(res.data.token);
+        setCurrentStep('company');
+        toast({
+          title: "شماره تأیید شد",
+          description: "نام شرکت خود را وارد کنید",
+        });
+      } else {
+        throw new Error(res.error || '');
+      }
     } catch (error) {
       toast({
         title: "کد نامعتبر",
@@ -110,8 +120,12 @@ export const ProviderSignup: React.FC = () => {
 
     setIsLoading(true);
     try {
-      await createCompany({ name: companyName, phone });
-      setCurrentStep('details');
+      const res = await createCompany({ name: companyName, phone }, authToken!);
+      if (res.success) {
+        setCurrentStep('details');
+      } else {
+        throw new Error(res.error || '');
+      }
     } catch (error) {
       toast({
         title: "خطا در ثبت شرکت",
@@ -153,16 +167,19 @@ export const ProviderSignup: React.FC = () => {
 
     setIsLoading(true);
     try {
-      await createProvider({
+      const res = await createProvider({
         name: companyName,
         phone,
         radius_km: parseInt(radius),
         categories: selectedCategories,
         is_24_7: is24_7,
         vehicle_types: selectedVehicleTypes
-      });
-      
-      navigate('/signup/success');
+      }, authToken!);
+      if (res.success) {
+        navigate('/signup/success');
+      } else {
+        throw new Error(res.error || '');
+      }
     } catch (error) {
       toast({
         title: "خطا در ثبت‌نام",
