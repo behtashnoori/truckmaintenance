@@ -229,13 +229,22 @@ class ApiClient {
         },
         ...options,
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      let data: unknown = null;
+      try {
+        data = await response.json();
+      } catch (e) {
+        // ignore JSON parse errors
       }
 
-      const data = await response.json();
-      return { success: true, data };
+      if (!response.ok) {
+        const errData = data as { message?: string; error?: string } | null;
+        const message =
+          (errData && (errData.message || errData.error)) ||
+          `HTTP ${response.status}: ${response.statusText}`;
+        return { success: false, error: message };
+      }
+
+      return { success: true, data: data as T };
     } catch (error) {
       console.error('API Error:', error);
       return {

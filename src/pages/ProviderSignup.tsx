@@ -61,7 +61,15 @@ export const ProviderSignup: React.FC = () => {
           description: "کد ۶ رقمی به شماره شما پیامک شد",
         });
       } else {
-        throw new Error(res.error || '');
+        let description = "لطفاً دوباره تلاش کنید";
+        if (res.error?.includes("OTP recently requested")) {
+          description = "کد تأیید قبلاً ارسال شده است. لطفاً لحظاتی بعد دوباره تلاش کنید";
+        }
+        toast({
+          title: "خطا در ارسال کد",
+          description,
+          variant: "destructive",
+        });
       }
     } catch (error) {
       toast({
