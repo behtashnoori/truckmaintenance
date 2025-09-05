@@ -1,34 +1,22 @@
-import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from dotenv import load_dotenv
 
 
 db = SQLAlchemy()
-migrate = None
-
+migrate = Migrate()
 
 def create_app():
-    load_dotenv()  # .env را لود کن
     app = Flask(__name__)
-    app.config.from_object("config.Config")
+    app.config.from_object("backend.config.Config")
 
     db.init_app(app)
-    global migrate
-    migrate = Migrate(app, db)
+    migrate.init_app(app, db)
 
-    # ثبت بلوپرینت ها
-    from .routes.company import bp as company_bp
-    app.register_blueprint(company_bp, url_prefix="/")
-
-    # ساخت جداول در صورت نبود (برای Dev)
-    with app.app_context():
-        from .models.company import Company  # اطمینان از import مدل
-        db.create_all()
-
-    @app.get("/health")
-    def health():
-        return {"status": "ok"}
+    # مدل‌ها را ایمپورت کن تا Alembic ببیند
+    from backend.models import Company  # noqa: F401
+    # ثبت روت‌ها
+    from backend.routes import api_bp
+    app.register_blueprint(api_bp, url_prefix="/")
 
     return app
