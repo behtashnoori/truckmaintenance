@@ -1,9 +1,9 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 class Config:
-    SQLALCHEMY_DATABASE_URI = os.getenv(
-        "SQLALCHEMY_DATABASE_URI",
-        "sqlite:///app.db"  # fallback فقط برای توسعه بدون سرور
-    )
+    SQLALCHEMY_DATABASE_URI = os.getenv("SQLALCHEMY_DATABASE_URI")
+    if not SQLALCHEMY_DATABASE_URI:
+        raise RuntimeError("SQLALCHEMY_DATABASE_URI is not set")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ECHO = os.getenv("SQLALCHEMY_ECHO", "false").lower() == "true"
