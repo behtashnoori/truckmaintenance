@@ -34,9 +34,11 @@ def create_app():
 
     from .api.auth import bp as auth_bp
     from .api.providers import bp as providers_bp
+    from .api.company import bp as company_bp
 
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(providers_bp, url_prefix="/providers")
+    app.register_blueprint(company_bp, url_prefix="/company")
 
     @app.route("/")
     def index():

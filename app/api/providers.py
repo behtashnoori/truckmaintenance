@@ -50,11 +50,11 @@ def register_company():
         return json_error("phone_mismatch", "phone mismatch", 401)
 
     db = get_db()
-    company = db.execute(select(Company).where(Company.tel == phone)).scalar_one_or_none()
+    company = db.execute(select(Company).where(Company.phone == phone)).scalar_one_or_none()
     if company:
         company.name = name
     else:
-        company = Company(name=name, tel=phone)
+        company = Company(name=name, phone=phone)
         db.add(company)
     db.commit()
     return {"id": company.id}
@@ -114,11 +114,11 @@ def register_provider():
     if len(vehicles_db) != len(set(veh_slugs)):
         return json_error("unknown_vehicle_type", "unknown vehicle type")
 
-    company = db.execute(select(Company).where(Company.tel == phone)).scalar_one_or_none()
+    company = db.execute(select(Company).where(Company.phone == phone)).scalar_one_or_none()
     if company:
         company.name = name
     else:
-        company = Company(name=name, tel=phone)
+        company = Company(name=name, phone=phone)
         db.add(company)
 
     point = WKTElement(f"POINT({lon} {lat})", srid=4326)

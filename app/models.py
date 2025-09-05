@@ -36,7 +36,7 @@ class Company(Base):
     __tablename__ = "company"
 
     id = Column(Integer, primary_key=True)
-    tel = Column(String(20), unique=True, nullable=False)
+    phone = Column(String(20), unique=True, nullable=False)
     name = Column(String(255), nullable=False)
 
 

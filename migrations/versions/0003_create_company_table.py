@@ -14,7 +14,7 @@ def upgrade() -> None:
     op.create_table(
         "company",
         sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column("tel", sa.String(length=20), nullable=False, unique=True),
+        sa.Column("phone", sa.String(length=20), nullable=False, unique=True),
         sa.Column("name", sa.String(length=255), nullable=False),
     )
 
