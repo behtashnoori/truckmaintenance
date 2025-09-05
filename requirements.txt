@@ -1,8 +1,10 @@
-flask
+Flask
 flask-cors
+Flask-SQLAlchemy
 SQLAlchemy>=2
-geoalchemy2
 pyodbc
-alembic
 python-dotenv
+Flask-Migrate
+geoalchemy2
+alembic
 PyJWT
