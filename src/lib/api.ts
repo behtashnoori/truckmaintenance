@@ -337,10 +337,14 @@ class ApiClient {
   async registerCompany(
     data: CompanyRegistration,
     token: string
-  ): Promise<ApiResponse<{ id: string }>> {
-    await new Promise(resolve => setTimeout(resolve, 600));
-
-    return { success: true, data: { id: '1' } };
+  ): Promise<ApiResponse<{ Id: number; Tel: string; Name: string }>> {
+    return this.request<{ Id: number; Tel: string; Name: string }>('/company', {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
   }
 
   // Register new provider
