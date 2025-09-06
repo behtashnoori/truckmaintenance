@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { CategorySelector } from '@/components/CategorySelector';
 import { Header } from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ServiceCategory, VehicleType, requestOTP, verifyOTP, createProvider, createCompany } from '@/lib/api';
+import { ServiceCategory, VehicleType, requestOTP, verifyOTP, createProvider } from '@/lib/api';
 import { Phone, Building, Radius, Clock, Truck, Bus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -82,6 +82,7 @@ export const ProviderSignup: React.FC = () => {
     setIsLoading(true);
     try {
       await verifyOTP(phone, otp);
+      localStorage.setItem('provider_phone', phone);
       setCurrentStep('company');
       toast({
         title: "شماره تأیید شد",
@@ -110,16 +111,28 @@ export const ProviderSignup: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const res = await createCompany({ name: companyName, phone });
-      if (!res.success) {
-        throw new Error(res.error || 'company creation failed');
+      const storedPhone = localStorage.getItem('provider_phone') || '';
+      const name = companyName.trim();
+      if (!storedPhone) {
+        throw new Error('شماره تلفن یافت نشد؛ مرحله قبل را کامل کنید');
       }
+      const res = await fetch('http://127.0.0.1:5000/company', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: storedPhone, name }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      const json = await res.json();
+      localStorage.setItem('provider_company_id', String(json.id));
       setCurrentStep('details');
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: "خطا در ثبت شرکت",
-        description: "لطفاً دوباره تلاش کنید",
-        variant: "destructive",
+        title: 'خطا در ثبت شرکت',
+        description: error.message || 'لطفاً دوباره تلاش کنید',
+        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);

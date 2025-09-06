@@ -23,7 +23,7 @@ def create_app():
     # CORS برای فرانت‌اند
     CORS(app, resources={r"*": {"origins": "*"}})
 
-    from backend.routes import api_bp
-    app.register_blueprint(api_bp, url_prefix="/")
+    from backend.routes.company import bp as company_bp
+    app.register_blueprint(company_bp)
 
     return app

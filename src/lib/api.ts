@@ -56,10 +56,6 @@ interface ProviderRegistration {
   vehicle_types: VehicleType[];
 }
 
-interface CompanyRegistration {
-  name: string;
-  phone: string;
-}
 
 interface ContactForm {
   name: string;
@@ -333,20 +329,6 @@ class ApiClient {
     return { success: false, error: 'کد تأیید نامعتبر است' };
   }
 
-  // Register company information
-  async registerCompany(
-    data: CompanyRegistration,
-    token: string
-  ): Promise<ApiResponse<{ Id: number; Tel: string; Name: string }>> {
-    return this.request<{ Id: number; Tel: string; Name: string }>('/company', {
-      method: 'POST',
-      body: JSON.stringify(data),
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  }
-
   // Register new provider
   async registerProvider(
     data: ProviderRegistration,
@@ -377,9 +359,6 @@ export const requestOTP = (phone: string) => api.requestOtp(phone);
 
 export const verifyOTP = (phone: string, code: string) => api.verifyOtp(phone, code);
 
-export const createCompany = (data: CompanyRegistration, token?: string) =>
-  api.registerCompany(data, token || 'mock-token');
-
 export const createProvider = (data: ProviderRegistration, token?: string) =>
   api.registerProvider(data, token || 'mock-token');
 
@@ -391,6 +370,5 @@ export type {
   ServiceCategory,
   VehicleType,
   ProviderRegistration,
-  CompanyRegistration,
   ContactForm,
 };
