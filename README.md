@@ -22,14 +22,12 @@ This project delivers a two-part system for locating and registering heavy vehic
 ## Repository Layout
 
 ```
-app/                # Flask application
-  api/              # auth & provider endpoints
-  utils/            # aliases, errors, geo helpers
-  models.py         # SQLAlchemy models
+backend/            # Flask application (app factory, models, routes)
+  app/              # app factory package
   config.py         # environment variables
-  db.py             # DB session handling
-migrations/         # Alembic migration files
-scripts/            # seed script
+  models.py         # SQLAlchemy models
+  routes.py         # API routes
+migrations/         # Flask-Migrate files
 src/                # React frontend
 ```
 
@@ -41,10 +39,10 @@ src/                # React frontend
 # داخل venv
 pip install -r requirements.txt
 
-# اگر migrations داری:
+# اعمال مایگریشن‌ها (اگر migrations موجود است)
 python -m flask --app backend.app db upgrade
 
-# اگر تازه‌سازی لازم بود (فقط بار اول):
+# اگر بار اول است:
 # python -m flask --app backend.app db init
 # python -m flask --app backend.app db migrate -m "baseline"
 # python -m flask --app backend.app db upgrade
@@ -60,20 +58,6 @@ Check health:
 ```bash
 curl http://localhost:5000/
 # {"status": "ok"}
-```
-
-### Seeding Demo Data
-
-Populate example providers for Tehran, Isfahan and Tabriz:
-
-```bash
-python -m scripts.seed
-```
-
-Example search after seeding:
-
-```bash
-http :5000/providers lat==35.72 lon==51.41 category==tyre-wheel vehicleType==semi only24_7==true
 ```
 
 ### OTP Development Flow

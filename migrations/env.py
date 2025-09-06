@@ -1,30 +1,25 @@
+from __future__ import with_statement
 from logging.config import fileConfig
-
 from alembic import context
-from sqlalchemy import engine_from_config, pool
-
-import sys
-from pathlib import Path
-
-sys.path.append(str(Path(__file__).resolve().parents[1]))
-
-from app.config import MSSQL_URI
-from app.models import Base
+from flask import current_app
 
 config = context.config
-config.set_main_option("sqlalchemy.url", MSSQL_URI)
+fileConfig(config.config_file_name)
 
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
 
-target_metadata = Base.metadata
+target_metadata = current_app.extensions["migrate"].db.metadata
 
 
 def run_migrations_offline() -> None:
+    url = str(current_app.extensions["migrate"].db.engine.url).replace("%", "%%")
     context.configure(
-        url=config.get_main_option("sqlalchemy.url"),
+        url=url,
         target_metadata=target_metadata,
         literal_binds=True,
+        include_schemas=True,
+        version_table_schema="dbo",
+        compare_type=True,
+        render_as_batch=False,
     )
 
     with context.begin_transaction():
@@ -32,14 +27,17 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    connectable = current_app.extensions["migrate"].db.engine
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            include_schemas=True,
+            version_table_schema="dbo",
+            compare_type=True,
+            render_as_batch=False,
+        )
 
         with context.begin_transaction():
             context.run_migrations()
