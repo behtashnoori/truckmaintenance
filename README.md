@@ -38,9 +38,21 @@ src/                # React frontend
 ## Backend Setup
 
 ```bash
+# داخل venv
 pip install -r requirements.txt
-alembic upgrade head
-flask --app app run
+
+# اگر migrations داری:
+python -m flask --app backend.app db upgrade
+
+# اگر تازه‌سازی لازم بود (فقط بار اول):
+# python -m flask --app backend.app db init
+# python -m flask --app backend.app db migrate -m "baseline"
+# python -m flask --app backend.app db upgrade
+
+# اجرا
+python -m flask --app backend.app run
+# یا
+flask --app backend.app run
 ```
 
 Check health:

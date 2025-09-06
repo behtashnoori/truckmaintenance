@@ -36,8 +36,9 @@ def create_company():
         return jsonify(c.to_dict()), 201
     except SQLAlchemyError:
         db.session.rollback()
-        current_app.logger.exception("DB error on create_company")
-        return jsonify({"error": "database error"}), 500
+        msg = "خطا در ذخیره شماره تلفن یا نام شرکت"
+        current_app.logger.exception(msg)
+        return jsonify({"error": msg}), 500
 
 
 @api_bp.route("/company", methods=["GET"])
