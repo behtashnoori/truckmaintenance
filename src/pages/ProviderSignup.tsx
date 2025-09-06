@@ -110,7 +110,10 @@ export const ProviderSignup: React.FC = () => {
 
     setIsLoading(true);
     try {
-      await createCompany({ name: companyName, phone });
+      const res = await createCompany({ name: companyName, phone });
+      if (!res.success) {
+        throw new Error(res.error || 'company creation failed');
+      }
       setCurrentStep('details');
     } catch (error) {
       toast({
