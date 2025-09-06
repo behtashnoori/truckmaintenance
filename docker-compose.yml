@@ -13,7 +13,7 @@ services:
     environment:
       - MSSQL_URI=mssql+pyodbc://sa:YourStrong!Passw0rd@db:1433/tempdb?driver=ODBC+Driver+17+for+SQL+Server
       - JWT_SECRET=change-me
-      - FRONTEND_ORIGINS=http://localhost:5173
+      - FRONTEND_ORIGINS=http://localhost:1743
     ports:
       - "5000:5000"
     depends_on:
