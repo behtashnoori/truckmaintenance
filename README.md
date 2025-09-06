@@ -126,6 +126,8 @@ npm install
 npm run dev
 ```
 
+The development server runs on `http://localhost:1743`.
+
 The frontend expects the backend on `http://localhost:5000`.
 
 ---
