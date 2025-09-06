@@ -9,7 +9,10 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center gradient-hero">
+    <div className="min-h-screen flex flex-col items-center justify-center gradient-hero">
+      <h1 className="text-3xl md:text-4xl font-bold mb-8 text-center">
+        بازارگاه خدمات اضطراری و تعمیرات خودروهای سنگین
+      </h1>
       <div className="grid grid-cols-2 gap-4 w-full max-w-md p-4">
         {menuItems.map((item) => (
           <Link
