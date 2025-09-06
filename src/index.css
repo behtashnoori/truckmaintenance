@@ -188,4 +188,8 @@
     min-height: 44px;
     min-width: 44px;
   }
+
+  .text-shadow-white {
+    text-shadow: 0 0 4px rgba(255,255,255,0.8);
+  }
 }

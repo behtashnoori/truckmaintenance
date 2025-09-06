@@ -185,9 +185,11 @@ export const CategoryPage: React.FC = () => {
       <Header title={categoryInfo.title} />
       
       {/* Category Info */}
-      <div className="bg-gradient-primary text-white p-4 text-center">
-        <h2 className="text-lg font-semibold mb-1">{categoryInfo.title}</h2>
-        <p className="text-sm opacity-90">{categoryInfo.subtitle}</p>
+      <div className="gradient-hero text-white p-6 text-center">
+        <div className="max-w-md mx-auto">
+          <h2 className="text-xl font-bold mb-1 text-shadow-white">{categoryInfo.title}</h2>
+          <p className="text-sm opacity-90 text-shadow-white">{categoryInfo.subtitle}</p>
+        </div>
       </div>
       
       {/* Filter Bar */}
