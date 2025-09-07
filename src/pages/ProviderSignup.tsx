@@ -35,7 +35,7 @@ export const ProviderSignup: React.FC = () => {
     'details',
   ];
   const currentIndex = steps.indexOf(currentStep);
-  const [selectedCategories, setSelectedCategories] = useState<ServiceCategory[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | undefined>(undefined);
   const [radius, setRadius] = useState('50');
   const [is24_7, setIs24_7] = useState(false);
   const [selectedVehicleTypes, setSelectedVehicleTypes] = useState<VehicleType[]>([]);
@@ -150,7 +150,7 @@ export const ProviderSignup: React.FC = () => {
       return;
     }
 
-    if (selectedCategories.length === 0) {
+    if (!selectedCategory) {
       toast({
         title: "خطا",
         description: "لطفاً حداقل یک دسته خدمات انتخاب کنید",
@@ -174,7 +174,7 @@ export const ProviderSignup: React.FC = () => {
         name: companyName,
         phone,
         radius_km: parseInt(radius),
-        categories: selectedCategories,
+        categories: selectedCategory ? [selectedCategory] : [],
         is_24_7: is24_7,
         vehicle_types: selectedVehicleTypes
       });
@@ -191,12 +191,8 @@ export const ProviderSignup: React.FC = () => {
     }
   };
 
-  const handleCategoryToggle = (category: ServiceCategory) => {
-    setSelectedCategories(prev => 
-      prev.includes(category)
-        ? prev.filter(c => c !== category)
-        : [...prev, category]
-    );
+  const handleCategorySelect = (category: ServiceCategory) => {
+    setSelectedCategory(prev => (prev === category ? undefined : category));
   };
 
   const handleVehicleTypeToggle = (vehicleType: VehicleType) => {
@@ -336,15 +332,13 @@ export const ProviderSignup: React.FC = () => {
             <div className="space-y-6">
               {/* Services */}
               <Card>
-                <CardHeader>
+                <CardHeader className="items-center">
                   <CardTitle>خدمات ارائه‌شده</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <CategorySelector
-                    selectedCategory={selectedCategories[0]}
-                    onCategorySelect={handleCategoryToggle}
-                    multiSelect={true}
-                    selectedCategories={selectedCategories}
+                    selectedCategory={selectedCategory}
+                    onCategorySelect={handleCategorySelect}
                   />
                   <p className="text-sm text-muted-foreground mt-2">
                     حداقل یک دسته خدمات انتخاب کنید
@@ -457,7 +451,7 @@ export const ProviderSignup: React.FC = () => {
                 onClick={handleSubmit}
                 disabled={
                   isLoading ||
-                  selectedCategories.length === 0 ||
+                  !selectedCategory ||
                   selectedVehicleTypes.length === 0
                 }
                 className="w-full"
