@@ -86,7 +86,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   }
 
   return (
-    <div className={`grid gap-3 ${className}`}>
+    <div className={`grid grid-cols-2 gap-3 ${className}`}>
       {categories.map((category) => {
         const Icon = category.icon;
         const categorySelected = isSelected(category.id);

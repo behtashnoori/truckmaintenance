@@ -128,10 +128,11 @@ export const ProviderSignup: React.FC = () => {
       const json = await res.json();
       localStorage.setItem('provider_company_id', String(json.id));
       setCurrentStep('details');
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'لطفاً دوباره تلاش کنید';
       toast({
         title: 'خطا در ثبت شرکت',
-        description: error.message || 'لطفاً دوباره تلاش کنید',
+        description: message,
         variant: 'destructive',
       });
     } finally {
