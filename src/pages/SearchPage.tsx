@@ -33,8 +33,9 @@ export const SearchPage: React.FC = () => {
       <div className="gradient-hero text-white p-6 text-center">
         <div className="max-w-md mx-auto">
           <Truck size={48} className="mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-2 text-shadow-white">امداد کامیون</h1>
-          <p className="opacity-90 text-shadow-white">خدمات اضطراری و تعمیرات سنگین</p>
+          <h1 className="text-2xl font-bold mb-2 text-shadow-white">
+            بازارگاه خدمات اضطراری و تعمیرات خودروهای سنگین
+          </h1>
         </div>
       </div>
 
