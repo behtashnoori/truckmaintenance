@@ -126,9 +126,12 @@ npm install
 npm run dev
 ```
 
-The development server runs on `http://localhost:1743`.
+`npm run dev` now starts both the frontend (Vite) and the Flask backend together.
+If you want to run only the React app you can use `npm run frontend`, and the
+API alone can be started with `npm run backend`.
 
-The frontend expects the backend on `http://localhost:5000`.
+The Vite dev server runs on `http://localhost:1743` and the backend listens on
+`http://localhost:5000`.
 
 ---
 
