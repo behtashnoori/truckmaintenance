@@ -123,12 +123,18 @@ Environment variables (`MSSQL_URI`, `JWT_SECRET`, `FRONTEND_ORIGINS`) can be adj
 
 ```bash
 npm install
+
+# run frontend only
+npm run frontend
+
+# run backend only
+npm run backend
+
+# run both concurrently
 npm run dev
 ```
 
-The development server runs on `http://localhost:1743`.
-
-The frontend expects the backend on `http://localhost:5000`.
+The Vite development server runs on `http://localhost:1743` and the Flask backend on `http://localhost:5000`.
 
 ---
 
