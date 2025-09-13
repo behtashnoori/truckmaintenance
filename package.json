@@ -12,7 +12,10 @@
     "start": "python -m backend.runserver",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postinstall": "scripts\\setup-git-hooks.cmd || powershell -ExecutionPolicy Bypass -File scripts\\setup-git-hooks.ps1",
+    "git:hooks": "scripts\\setup-git-hooks.cmd",
+    "git:cleanup": "powershell -ExecutionPolicy Bypass -File scripts\\cleanup-db-tracked.ps1"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

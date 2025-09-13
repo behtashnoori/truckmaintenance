@@ -141,6 +141,13 @@ Individual services can still be launched via `npm run frontend` and `npm run ba
 
 ---
 
+## Git hygiene
+- Local DB/Log files are ignored and blocked from commits.
+- First time: run `npm install` to activate git hooks.
+- If you previously committed DB files: run `npm run git:cleanup` then commit.
+
+---
+
 ## License
 
 MIT

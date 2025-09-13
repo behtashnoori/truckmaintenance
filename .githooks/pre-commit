@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# لیست الگوهای ممنوع
+DENY_PATTERNS=(
+  '^DataBase/'
+  '\.mdf$'
+  '\.ldf$'
+  '\.sqlite([0-9]*)?$'
+  '\.bak$'
+  '\.log$'
+)
+
+STAGED=$(git diff --cached --name-only || true)
+if [ -z "$STAGED" ]; then
+  exit 0
+fi
+
+for file in $STAGED; do
+  for pat in "${DENY_PATTERNS[@]}"; do
+    if [[ "$file" =~ $pat ]]; then
+      echo "✖ Commit blocked: '$file' matches forbidden pattern '$pat'"
+      echo "→ Remove from index:  git rm --cached \"$file\""
+      exit 1
+    fi
+  done
+done
+
+exit 0
