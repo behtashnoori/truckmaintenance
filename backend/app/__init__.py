@@ -26,4 +26,8 @@ def create_app():
     from backend.routes.company import bp as company_bp
     app.register_blueprint(company_bp)
 
+    @app.get("/health")
+    def health():
+        return {"status": "ok"}
+
     return app
