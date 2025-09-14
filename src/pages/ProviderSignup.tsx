@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ServiceCategory, VehicleType, requestOTP, verifyOTP, createProvider } from '@/lib/api';
 import { Phone, Building, Radius, Clock, Truck, Bus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { apiUrl } from '@/lib/env'; // ⬅️ اضافه شد: استفاده از env برای ساخت URL کامل
 
 export const ProviderSignup: React.FC = () => {
   const navigate = useNavigate();
@@ -116,11 +117,15 @@ export const ProviderSignup: React.FC = () => {
       if (!storedPhone) {
         throw new Error('شماره تلفن یافت نشد؛ مرحله قبل را کامل کنید');
       }
-      const res = await fetch('http://127.0.0.1:5000/company', {
+
+      // ⬅️ تغییر اصلی: به‌جای آدرس هاردکد، از apiUrl استفاده می‌کنیم
+      const res = await fetch(apiUrl('/api/company'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: storedPhone, name }),
+        credentials: 'include',
       });
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || `HTTP ${res.status}`);
@@ -170,6 +175,7 @@ export const ProviderSignup: React.FC = () => {
 
     setIsLoading(true);
     try {
+      // توجه: createProvider فعلی در لایه API فقط name و phone را به بک‌اند می‌فرستد.
       await createProvider({
         name: companyName,
         phone,
