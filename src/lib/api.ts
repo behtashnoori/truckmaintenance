@@ -1,7 +1,7 @@
 // API Layer for Heavy Vehicle Service PWA
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
-  `${window.location.origin}/api`;
+  window.location.origin;
 
 interface ApiResponse<T = unknown> {
   success: boolean;
