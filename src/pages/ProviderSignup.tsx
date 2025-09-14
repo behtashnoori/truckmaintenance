@@ -13,7 +13,9 @@ import { ServiceCategory, VehicleType, requestOTP, verifyOTP, createProvider } f
 import { Phone, Building, Radius, Clock, Truck, Bus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  `${window.location.protocol}//${window.location.hostname}:5000`;
 
 export const ProviderSignup: React.FC = () => {
   const navigate = useNavigate();
