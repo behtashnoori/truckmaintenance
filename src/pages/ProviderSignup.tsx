@@ -9,7 +9,14 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { CategorySelector } from '@/components/CategorySelector';
 import { Header } from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ServiceCategory, VehicleType, requestOTP, verifyOTP, createProvider } from '@/lib/api';
+import {
+  ServiceCategory,
+  VehicleType,
+  requestOTP,
+  verifyOTP,
+  createProvider,
+  API_BASE_URL,
+} from '@/lib/api';
 import { Phone, Building, Radius, Clock, Truck, Bus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -116,7 +123,7 @@ export const ProviderSignup: React.FC = () => {
       if (!storedPhone) {
         throw new Error('شماره تلفن یافت نشد؛ مرحله قبل را کامل کنید');
       }
-      const res = await fetch('http://127.0.0.1:5000/company', {
+      const res = await fetch(`${API_BASE_URL}/company`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: storedPhone, name }),
