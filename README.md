@@ -121,20 +121,30 @@ Environment variables (`MSSQL_URI`, `JWT_SECRET`, `FRONTEND_ORIGINS`) can be adj
 
 ## Frontend Setup
 
+### Development (one command)
+
 ```bash
 npm install
-
-# run frontend only
-npm run frontend
-
-# run backend only
-npm run backend
-
-# run both concurrently
 npm run dev
+# React: http://localhost:5173  |  API: http://localhost:5000
 ```
 
-The Vite development server runs on `http://localhost:1743` and the Flask backend on `http://localhost:5000`.
+### Production build & serve
+
+```bash
+npm run build
+npm start
+# Served by Flask on http://localhost:8000
+```
+
+Individual services can still be launched via `npm run frontend` and `npm run backend`.
+
+---
+
+## Git hygiene
+- Local DB/Log files are ignored and blocked from commits.
+- First time: run `npm install` to activate git hooks.
+- If you previously committed DB files: run `npm run git:cleanup` then commit.
 
 ---
 
