@@ -1,7 +1,33 @@
 // API Layer for Heavy Vehicle Service PWA
-export const API_BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '') ||
-  `${window.location.protocol}//${window.location.hostname}:5000`;
+const envApiBase = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '');
+
+const fallbackApiBase = (() => {
+  if (typeof window === 'undefined') {
+    return 'http://localhost:5000';
+  }
+
+  const { protocol, hostname, port } = window.location;
+
+  // Development servers typically run on these ports and rely on the Flask
+  // backend exposed on :5000.
+  const devPorts = new Set(['1743', '5173', '4173', '3000']);
+  const isLocalHost = ['localhost', '127.0.0.1', '::1', ''].includes(hostname);
+
+  if (devPorts.has(port) || isLocalHost) {
+    const safeHost = hostname || 'localhost';
+    // Always talk to the Flask backend over HTTP during development.
+    return `http://${safeHost}:5000`;
+  }
+
+  if (!protocol || protocol === 'file:') {
+    return 'http://localhost:5000';
+  }
+
+  const portSuffix = port ? `:${port}` : '';
+  return `${protocol}//${hostname}${portSuffix}`;
+})();
+
+export const API_BASE_URL = (envApiBase || fallbackApiBase).replace(/\/$/, '');
 
 interface ApiResponse<T = unknown> {
   success: boolean;
