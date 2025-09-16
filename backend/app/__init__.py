@@ -1,20 +1,14 @@
+from __future__ import annotations
+
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
 from dotenv import load_dotenv
 from flask_cors import CORS
 
 
-db = SQLAlchemy()
-migrate = Migrate()
-
-def create_app():
+def create_app() -> Flask:
     load_dotenv()
     app = Flask(__name__)
     app.config.from_object("backend.config.Config")
-
-    db.init_app(app)
-    migrate.init_app(app, db)
 
     # JSON فارسی و مرتب‌سازی کلیدها خاموش
     app.json.ensure_ascii = False
@@ -24,6 +18,7 @@ def create_app():
     CORS(app, resources={r"*": {"origins": "*"}})
 
     from backend.routes.company import bp as company_bp
+
     app.register_blueprint(company_bp)
 
     return app
