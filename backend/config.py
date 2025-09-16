@@ -1,19 +1,17 @@
-import os
+from __future__ import annotations
 
-MSSQL_SERVER   = os.getenv("MSSQL_SERVER",   "185.10.75.107")
-MSSQL_DATABASE = os.getenv("MSSQL_DATABASE", "Marketplace")
-MSSQL_USER     = os.getenv("MSSQL_USER",     "sa")
-MSSQL_PASSWORD = os.getenv("MSSQL_PASSWORD", "REPLACE_WITH_REAL_PASSWORD")
-MSSQL_DRIVER   = os.getenv("MSSQL_DRIVER",   "ODBC Driver 17 for SQL Server")
+import os
+from pathlib import Path
+
+
+BASE_DIR = Path(__file__).resolve().parent
+DEFAULT_STORAGE_DIR = BASE_DIR / "storage"
+DEFAULT_COMPANY_FILE = DEFAULT_STORAGE_DIR / "companies.json"
 
 
 class Config:
-    SQLALCHEMY_DATABASE_URI = os.getenv(
-        "SQLALCHEMY_DATABASE_URI",
-        f"mssql+pyodbc://{MSSQL_USER}:{MSSQL_PASSWORD}"
-        f"@{MSSQL_SERVER}/{MSSQL_DATABASE}"
-        f"?driver={MSSQL_DRIVER.replace(' ', '+')}&TrustServerCertificate=yes"
-    )
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    """Basic Flask configuration for file-based storage."""
+
     JSON_AS_ASCII = False
-    SQLALCHEMY_ECHO = os.getenv("SQLALCHEMY_ECHO", "false").lower() == "true"
+    JSON_SORT_KEYS = False
+    COMPANY_DATA_FILE = os.getenv("COMPANY_DATA_FILE", str(DEFAULT_COMPANY_FILE))
