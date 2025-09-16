@@ -37,11 +37,16 @@ src/                # React frontend
 # داخل venv
 pip install -r requirements.txt
 
-# اجرا
-flask --app backend.app run
+# اجرای توسعه (قابل دسترسی از شبکه)
+flask run
 # یا
-python -m flask --app backend.app run
+python -m flask run
 ```
+
+The repository ships with a [`.flaskenv`](./.flaskenv) file so that the
+development server automatically binds to `0.0.0.0:5000`. این کار باعث می‌شود
+در مرورگری که روی سیستم دیگری باز شده هم بتوانید دکمه «ادامه» را بزنید و
+درخواست به سرور برسد.
 
 Data submitted through the API is persisted inside `backend/storage/companies.json`.
 
