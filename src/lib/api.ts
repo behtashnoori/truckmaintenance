@@ -1,7 +1,163 @@
 // API Layer for Heavy Vehicle Service PWA
-export const API_BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '') ||
-  `${window.location.protocol}//${window.location.hostname}:5000`;
+
+const normalizeBaseUrl = (value: string) => {
+  let result = value.trim();
+
+  while (result.endsWith('/')) {
+    result = result.slice(0, -1);
+  }
+
+  return result;
+};
+const API_BASE_STORAGE_KEY = 'api_base_url';
+
+const envApiBaseRaw = import.meta.env.VITE_API_BASE_URL as string | undefined;
+const envApiBase = envApiBaseRaw ? normalizeBaseUrl(envApiBaseRaw) : undefined;
+
+const loadPersistedApiBase = (): string | undefined => {
+  if (typeof window === 'undefined') {
+    return undefined;
+  }
+
+  try {
+    const stored = window.sessionStorage.getItem(API_BASE_STORAGE_KEY);
+    return stored ? normalizeBaseUrl(stored) : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+const candidateBaseSet = new Set<string>();
+const addCandidateBase = (value?: string | null) => {
+  if (!value) {
+    return;
+  }
+
+  const normalized = normalizeBaseUrl(value);
+  if (!normalized) {
+    return;
+  }
+
+  candidateBaseSet.add(normalized);
+};
+
+const persistedApiBase = loadPersistedApiBase();
+
+addCandidateBase(envApiBase);
+addCandidateBase(persistedApiBase);
+
+if (typeof window !== 'undefined') {
+  const { protocol, hostname, port } = window.location;
+  const safeProtocol = protocol && protocol !== ':' ? protocol : 'http:';
+  const safeHost = hostname && hostname !== '' ? hostname : 'localhost';
+  const portSuffix = port ? `:${port}` : '';
+
+  addCandidateBase(`${safeProtocol}//${safeHost}${portSuffix}`);
+  addCandidateBase(`http://${safeHost}:5000`);
+  addCandidateBase(`https://${safeHost}:5000`);
+} else {
+  addCandidateBase('http://localhost:5000');
+  addCandidateBase('http://127.0.0.1:5000');
+}
+
+addCandidateBase('http://localhost:5000');
+addCandidateBase('http://127.0.0.1:5000');
+
+const getCandidateApiBases = () => Array.from(candidateBaseSet);
+
+let activeApiBase: string | undefined =
+  envApiBase ?? persistedApiBase ?? getCandidateApiBases()[0];
+
+if (!activeApiBase) {
+  activeApiBase = 'http://localhost:5000';
+  addCandidateBase(activeApiBase);
+}
+
+const rememberApiBase = (base: string) => {
+  const normalized = normalizeBaseUrl(base);
+  activeApiBase = normalized;
+  addCandidateBase(normalized);
+
+  if (typeof window !== 'undefined') {
+    try {
+      window.sessionStorage.setItem(API_BASE_STORAGE_KEY, normalized);
+    } catch {
+      // Ignore storage access failures silently.
+    }
+  }
+};
+
+export const getApiBaseUrl = () =>
+  activeApiBase ?? getCandidateApiBases()[0] ?? 'http://localhost:5000';
+
+const isJsonResponse = (headers: Headers) => {
+  const contentType = headers.get('content-type')?.toLowerCase() ?? '';
+  return (
+    contentType.includes('application/json') ||
+    contentType.includes('+json')
+  );
+};
+
+export const fetchFromApi = async (
+  endpoint: string,
+  init: RequestInit = {}
+): Promise<Response> => {
+  const headers = new Headers(init.headers ?? {});
+
+  if (!headers.has('Accept')) {
+    headers.set('Accept', 'application/json');
+  }
+
+  if (init.body != null && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  const seen = new Set<string>();
+  const candidates: string[] = [];
+
+  for (const base of [activeApiBase, ...getCandidateApiBases()]) {
+    if (!base || seen.has(base)) {
+      continue;
+    }
+
+    seen.add(base);
+    candidates.push(base);
+  }
+
+  if (candidates.length === 0) {
+    throw new Error('No API base URL candidates available');
+  }
+
+  let lastError: unknown;
+
+  for (const base of candidates) {
+    try {
+      const response = await fetch(`${base}${endpoint}`, {
+        ...init,
+        headers: new Headers(headers),
+      });
+
+      if (isJsonResponse(response.headers)) {
+        rememberApiBase(base);
+        return response;
+      }
+
+      lastError = new Error(
+        `Unexpected content type from ${base}${endpoint}: ${
+          response.headers.get('content-type') ?? 'unknown'
+        }`
+      );
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (lastError instanceof Error) {
+    throw lastError;
+  }
+
+  throw new Error('Unable to reach API');
+};
 
 interface ApiResponse<T = unknown> {
   success: boolean;
@@ -56,6 +212,17 @@ interface ProviderRegistration {
   categories: ServiceCategory[];
   is_24_7: boolean;
   vehicle_types: VehicleType[];
+}
+
+interface CompanyRegistrationPayload {
+  phone: string;
+  name: string;
+}
+
+interface CompanyRegistrationResponse {
+  id: number | string;
+  message?: string;
+  error?: string;
 }
 
 
@@ -220,20 +387,33 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      const response = await fetchFromApi(endpoint, {
+        ...options,
         headers: {
           'Content-Type': 'application/json',
           ...options.headers,
         },
-        ...options,
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      let payload: T | undefined;
+
+      try {
+        payload = (await response.clone().json()) as T;
+      } catch {
+        payload = undefined;
       }
 
-      const data = await response.json();
-      return { success: true, data };
+      if (!response.ok) {
+        const errorMessage =
+          payload && typeof (payload as { error?: string }).error === 'string'
+            ? (payload as { error?: string }).error!
+            : `HTTP ${response.status}: ${response.statusText}`;
+        throw new Error(errorMessage);
+      }
+
+      return payload !== undefined
+        ? { success: true, data: payload }
+        : { success: true };
     } catch (error) {
       console.error('API Error:', error);
       return {
@@ -348,6 +528,40 @@ class ApiClient {
     return { success: true, data: { success: true } };
   }
 }
+
+export const registerCompanyProfile = async (
+  payload: CompanyRegistrationPayload
+): Promise<CompanyRegistrationResponse> => {
+  const response = await fetchFromApi('/company', {
+    method: 'POST',
+    body: JSON.stringify({
+      phone: payload.phone.trim(),
+      name: payload.name.trim(),
+    }),
+  });
+
+  let body: CompanyRegistrationResponse | undefined;
+
+  try {
+    body = (await response.json()) as CompanyRegistrationResponse;
+  } catch {
+    body = undefined;
+  }
+
+  if (!response.ok) {
+    const message =
+      body && typeof body.error === 'string' && body.error.trim().length > 0
+        ? body.error
+        : `HTTP ${response.status}`;
+    throw new Error(message);
+  }
+
+  if (!body || typeof body.id === 'undefined' || body.id === null) {
+    throw new Error('پاسخ نامعتبر از سرور دریافت شد');
+  }
+
+  return body;
+};
 
 export const api = new ApiClient();
 

@@ -15,7 +15,7 @@ import {
   requestOTP,
   verifyOTP,
   createProvider,
-  API_BASE_URL,
+  registerCompanyProfile,
 } from '@/lib/api';
 import { Phone, Building, Radius, Clock, Truck, Bus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -123,16 +123,7 @@ export const ProviderSignup: React.FC = () => {
       if (!storedPhone) {
         throw new Error('شماره تلفن یافت نشد؛ مرحله قبل را کامل کنید');
       }
-      const res = await fetch(`${API_BASE_URL}/company`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: storedPhone, name }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `HTTP ${res.status}`);
-      }
-      const json = await res.json();
+      const json = await registerCompanyProfile({ phone: storedPhone, name });
       localStorage.setItem('provider_company_id', String(json.id));
       setCurrentStep('details');
     } catch (error) {
