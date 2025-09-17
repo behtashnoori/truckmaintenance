@@ -1,5 +1,5 @@
 // API Layer for Heavy Vehicle Service PWA
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+import { API_BASE as API_BASE_URL } from '../utils/api';
 
 interface ApiResponse<T = unknown> {
   success: boolean;
@@ -218,6 +218,10 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     try {
+      if (!API_BASE_URL) {
+        console.error('VITE_API_BASE_URL is not defined');
+        throw new Error('API base URL is not defined');
+      }
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         headers: {
           'Content-Type': 'application/json',
