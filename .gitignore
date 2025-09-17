@@ -22,6 +22,18 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+# --- Local DB artifacts (do NOT version) ---
+DataBase/
+Database/
+*.mdf
+*.ldf
+*.ndf
+*.bak
+*.trn
+
+# Frontend build (در صورت وجود)
+frontend/dist/
+
 # Python
 __pycache__/
 *.pyc

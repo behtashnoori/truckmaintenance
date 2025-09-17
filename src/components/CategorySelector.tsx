@@ -20,18 +20,21 @@ const categories = [
     title: 'خدمات جاده‌ای',
     description: 'پارکینگ، سوخت، رستوران',
     icon: Truck,
+    disabled: true,
   },
   {
     id: 'tire' as ServiceCategory,
     title: 'لاستیک و رینگ',
     description: 'تعویض و تعمیر لاستیک',
     icon: Settings,
+    disabled: true,
   },
   {
     id: 'recovery' as ServiceCategory,
     title: 'امداد و حادثه',
     description: 'یدک‌کش و تعمیرات اضطراری',
     icon: AlertTriangle,
+    disabled: true,
   },
   {
     id: 'oil' as ServiceCategory,
@@ -68,18 +71,19 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
           const Icon = category.icon;
           const categorySelected = isSelected(category.id);
           
-          return (
-            <Button
-              key={category.id}
-              variant={categorySelected ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => handleCategoryClick(category.id)}
-              className="flex-1"
-            >
-              <Icon className="ml-1" size={16} />
-              {category.title}
-            </Button>
-          );
+        return (
+          <Button
+            key={category.id}
+            variant={categorySelected ? 'default' : 'outline'}
+            size="sm"
+            onClick={category.disabled ? undefined : () => handleCategoryClick(category.id)}
+            className="flex-1"
+            disabled={category.disabled}
+          >
+            <Icon className="ml-1" size={16} />
+            {category.title}
+          </Button>
+        );
         })}
       </div>
     );
@@ -90,13 +94,14 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
       {categories.map((category) => {
         const Icon = category.icon;
         const categorySelected = isSelected(category.id);
-        
+
         return (
           <Button
             key={category.id}
             variant={categorySelected ? 'default' : 'outline'}
             className="h-auto p-4 flex flex-col items-center text-center"
-            onClick={() => handleCategoryClick(category.id)}
+            onClick={category.disabled ? undefined : () => handleCategoryClick(category.id)}
+            disabled={category.disabled}
           >
             <Icon size={32} className="mb-2" />
             <div>
