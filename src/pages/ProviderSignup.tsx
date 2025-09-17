@@ -10,6 +10,7 @@ import { CategorySelector } from '@/components/CategorySelector';
 import { Header } from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ServiceCategory, VehicleType, requestOTP, verifyOTP, createProvider } from '@/lib/api';
+import { apiFetch } from '@/utils/api';
 import { Phone, Building, Radius, Clock, Truck, Bus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -116,16 +117,11 @@ export const ProviderSignup: React.FC = () => {
       if (!storedPhone) {
         throw new Error('شماره تلفن یافت نشد؛ مرحله قبل را کامل کنید');
       }
-      const res = await fetch('http://127.0.0.1:5000/company', {
+      const json = await apiFetch<{ id: number }>('/api/signup/company', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: storedPhone, name }),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `HTTP ${res.status}`);
-      }
-      const json = await res.json();
       localStorage.setItem('provider_company_id', String(json.id));
       setCurrentStep('details');
     } catch (error) {

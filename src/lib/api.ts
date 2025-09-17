@@ -1,5 +1,5 @@
 // API Layer for Heavy Vehicle Service PWA
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+import { apiFetch } from '../utils/api';
 
 interface ApiResponse<T = unknown> {
   success: boolean;
@@ -218,19 +218,13 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      const data = await apiFetch<T>(endpoint, {
         headers: {
           'Content-Type': 'application/json',
           ...options.headers,
         },
         ...options,
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
       return { success: true, data };
     } catch (error) {
       console.error('API Error:', error);
