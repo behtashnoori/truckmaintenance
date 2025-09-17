@@ -14,6 +14,13 @@ def _normalize_server(server: str, port: Optional[str] = None) -> str:
 
     server = server.strip()
 
+    # SQL Server connection strings sometimes include the ``tcp:`` prefix
+    # (e.g. ``tcp:127.0.0.1,1433``). SQLAlchemy does not understand this
+    # prefix in the URI host section, so we strip it before any further
+    # normalization so that the usual ``host:port`` conversion below can run.
+    if server.lower().startswith("tcp:"):
+        server = server[4:]
+
     # Explicit port from env has the highest priority.
     if port:
         return f"{server}:{port.strip()}"
