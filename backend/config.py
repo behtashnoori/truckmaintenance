@@ -3,7 +3,7 @@ import os
 MSSQL_SERVER   = os.getenv("MSSQL_SERVER",   "185.10.75.107")
 MSSQL_DATABASE = os.getenv("MSSQL_DATABASE", "Marketplace")
 MSSQL_USER     = os.getenv("MSSQL_USER",     "sa")
-MSSQL_PASSWORD = os.getenv("MSSQL_PASSWORD", "REPLACE_WITH_REAL_PASSWORD")
+MSSQL_PASSWORD = os.getenv("MSSQL_PASSWORD", "Sa123sa")
 MSSQL_DRIVER   = os.getenv("MSSQL_DRIVER",   "ODBC Driver 17 for SQL Server")
 
 
