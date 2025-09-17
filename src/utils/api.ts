@@ -27,12 +27,12 @@ const extractErrorMessage = (payload: unknown, fallback: string) => {
 };
 
 export async function apiFetch<T = unknown>(path: string, init?: RequestInit): Promise<T> {
+  const base = API_BASE ? trimTrailingSlash(API_BASE) : '';
   if (!API_BASE) {
     console.error('Cannot perform request without API base URL');
-    throw new Error('آدرس سرور تنظیم نشده است');
   }
 
-  const url = `${trimTrailingSlash(API_BASE)}${ensureLeadingSlash(path)}`;
+  const url = `${base}${ensureLeadingSlash(path)}`;
   const response = await fetch(url, init);
 
   const contentType = response.headers.get('content-type') ?? '';
