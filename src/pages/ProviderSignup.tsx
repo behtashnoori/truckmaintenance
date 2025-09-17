@@ -117,7 +117,11 @@ export const ProviderSignup: React.FC = () => {
         throw new Error('شماره تلفن یافت نشد؛ مرحله قبل را کامل کنید');
       }
       const base = import.meta.env.VITE_API_BASE_URL;
-      const res = await fetch(`${base}/company`, {
+      if (!base) {
+        throw new Error('آدرس سرور تنظیم نشده است');
+      }
+      const normalizedBase = base.endsWith('/') ? base.slice(0, -1) : base;
+      const res = await fetch(`${normalizedBase}/api/signup/company`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: storedPhone, name }),
