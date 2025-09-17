@@ -1,5 +1,19 @@
 // API Layer for Heavy Vehicle Service PWA
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+if (!API_BASE_URL) {
+  throw new Error('VITE_API_BASE_URL is not configured');
+}
+
+const buildUrl = (endpoint: string) => {
+  const normalizedBase = API_BASE_URL.endsWith('/')
+    ? API_BASE_URL.slice(0, -1)
+    : API_BASE_URL;
+  const normalizedEndpoint = endpoint.startsWith('/')
+    ? endpoint
+    : `/${endpoint}`;
+  return `${normalizedBase}${normalizedEndpoint}`;
+};
 
 interface ApiResponse<T = unknown> {
   success: boolean;
@@ -218,7 +232,7 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      const response = await fetch(buildUrl(endpoint), {
         headers: {
           'Content-Type': 'application/json',
           ...options.headers,

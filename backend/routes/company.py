@@ -1,11 +1,13 @@
 from flask import Blueprint, request, jsonify
+
 from ..app import db
 from ..models.company import Company
 
-bp = Blueprint("company", __name__)
+
+bp = Blueprint("company", __name__, url_prefix="/api/signup")
 
 
-@bp.route("/company", methods=["POST"])
+@bp.post("/company")
 def create_company():
     """
     بدنه‌ی ورودی:
