@@ -116,7 +116,8 @@ export const ProviderSignup: React.FC = () => {
       if (!storedPhone) {
         throw new Error('شماره تلفن یافت نشد؛ مرحله قبل را کامل کنید');
       }
-      const res = await fetch('http://127.0.0.1:5000/company', {
+      const base = import.meta.env.VITE_API_BASE_URL;
+      const res = await fetch(`${base}/company`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: storedPhone, name }),
