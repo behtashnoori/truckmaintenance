@@ -117,21 +117,19 @@ export const ProviderSignup: React.FC = () => {
         throw new Error('شماره تلفن یافت نشد؛ مرحله قبل را کامل کنید');
       }
       const base = import.meta.env.VITE_API_BASE_URL;
-      if (!base) {
-        throw new Error('آدرس سرور تنظیم نشده است');
-      }
-      const normalizedBase = base.endsWith('/') ? base.slice(0, -1) : base;
-      const res = await fetch(`${normalizedBase}/api/signup/company`, {
+      const response = await fetch(`${base}/api/signup/company`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: storedPhone, name }),
+        body: JSON.stringify({ name, phone: storedPhone }),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `HTTP ${res.status}`);
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'خطایی رخ داد');
       }
-      const json = await res.json();
-      localStorage.setItem('provider_company_id', String(json.id));
+
+      localStorage.setItem('provider_company_id', String(data.id));
       setCurrentStep('details');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'لطفاً دوباره تلاش کنید';
