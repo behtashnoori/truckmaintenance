@@ -117,7 +117,7 @@ export const ProviderSignup: React.FC = () => {
       if (!storedPhone) {
         throw new Error('شماره تلفن یافت نشد؛ مرحله قبل را کامل کنید');
       }
-      const json = await apiFetch<{ id: number }>('/api/signup/company', {
+      const json = await apiFetch<{ id: number }>('/company', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: storedPhone, name }),
