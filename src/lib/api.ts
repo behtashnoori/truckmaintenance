@@ -1,5 +1,83 @@
 // API Layer for Heavy Vehicle Service PWA
-import { apiFetch } from '../utils/api';
+
+const trimTrailingSlash = (value: string) => value.replace(/\/+$/, '');
+const ensureLeadingSlash = (value: string) => (value.startsWith('/') ? value : `/${value}`);
+
+export const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
+if (!API_BASE) {
+  console.error('VITE_API_BASE_URL is not defined');
+}
+
+const extractErrorMessage = (payload: unknown, fallback: string) => {
+  if (!payload) return fallback;
+
+  if (typeof payload === 'string') {
+    return payload.trim() || fallback;
+  }
+
+  if (typeof payload === 'object') {
+    const messageLike =
+      // @ts-expect-error index signature not declared on purpose
+      payload?.message ?? payload?.detail ?? payload?.error ?? payload?.errors;
+    if (Array.isArray(messageLike)) {
+      return messageLike.map(item => (typeof item === 'string' ? item : '')).join('\n') || fallback;
+    }
+    if (messageLike) {
+      return String(messageLike);
+    }
+  }
+
+  return fallback;
+};
+
+const normalizeBase = () => (API_BASE ? trimTrailingSlash(API_BASE) : null);
+
+export async function apiFetch<T = unknown>(path: string, init?: RequestInit): Promise<T> {
+  const base = normalizeBase();
+  if (!base) {
+    const message = 'Cannot perform request because VITE_API_BASE_URL is not defined';
+    console.error(message);
+    throw new Error(message);
+  }
+
+  const normalizedPath = ensureLeadingSlash(path);
+  console.log('API BASE:', base, 'PATH:', normalizedPath);
+
+  const headers = new Headers(init?.headers ?? {});
+  if (!headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  const response = await fetch(`${base}${normalizedPath}`, {
+    ...init,
+    headers,
+  });
+
+  const contentType = response.headers.get('content-type') ?? '';
+  const expectsJson = contentType.includes('application/json');
+
+  let payload: unknown = undefined;
+  if (response.status !== 204) {
+    try {
+      if (expectsJson) {
+        payload = await response.json();
+      } else {
+        const text = await response.text();
+        payload = text ? text : undefined;
+      }
+    } catch (error) {
+      console.error('Failed to parse API response', error);
+    }
+  }
+
+  if (!response.ok) {
+    const fallbackMessage = `HTTP ${response.status} ${response.statusText}`;
+    throw new Error(extractErrorMessage(payload, fallbackMessage));
+  }
+
+  return (payload as T) ?? (undefined as T);
+}
 
 interface ApiResponse<T = unknown> {
   success: boolean;
@@ -218,13 +296,7 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     try {
-      const data = await apiFetch<T>(endpoint, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
-        ...options,
-      });
+      const data = await apiFetch<T>(endpoint, options);
       return { success: true, data };
     } catch (error) {
       console.error('API Error:', error);
