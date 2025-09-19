@@ -113,7 +113,7 @@ export const ProviderSignup: React.FC = () => {
     }
   };
 
-  const handleCompanySubmit = async () => {
+  const handleCompanySubmit = () => {
     if (!companyName.trim()) {
       toast({
         title: "خطا",
@@ -123,30 +123,7 @@ export const ProviderSignup: React.FC = () => {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const storedPhone = localStorage.getItem('provider_phone') || '';
-      const name = companyName.trim();
-      if (!storedPhone) {
-        throw new Error('شماره تلفن یافت نشد؛ مرحله قبل را کامل کنید');
-      }
-      const json = await apiFetch<{ id: number }>('/api/signup/company', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: storedPhone, name }),
-      });
-      localStorage.setItem('provider_company_id', String(json.id));
-      setCurrentStep('details');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'لطفاً دوباره تلاش کنید';
-      toast({
-        title: 'خطا در ثبت شرکت',
-        description: message,
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    setCurrentStep('details');
   };
 
   const handleSubmit = async () => {
@@ -179,9 +156,9 @@ export const ProviderSignup: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const companyId = localStorage.getItem('provider_company_id');
-      if (!companyId) {
-        throw new Error('شناسه شرکت یافت نشد؛ لطفاً مراحل قبلی را کامل کنید');
+      const storedPhone = localStorage.getItem('provider_phone') || '';
+      if (!storedPhone) {
+        throw new Error('شماره تلفن یافت نشد؛ لطفاً مراحل قبلی را کامل کنید');
       }
 
       const typeOfService = selectedCategory ? categoryLabels[selectedCategory] : '';
@@ -191,10 +168,12 @@ export const ProviderSignup: React.FC = () => {
         .map(vehicle => vehicleLabels[vehicle])
         .join(', ');
 
-      await apiFetch(`/api/signup/company/${companyId}`, {
-        method: 'PUT',
+      await apiFetch('/api/signup/company', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          phone: storedPhone,
+          name: companyName.trim(),
           type_of_service: typeOfService,
           radius_of_activity: Number.isNaN(radiusValue) ? undefined : radiusValue,
           working_hours: workingHours,
@@ -203,6 +182,7 @@ export const ProviderSignup: React.FC = () => {
         }),
       });
 
+      localStorage.removeItem('provider_phone');
       navigate('/signup/success');
     } catch (error) {
       toast({
