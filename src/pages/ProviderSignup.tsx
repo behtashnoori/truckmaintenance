@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { CategorySelector } from '@/components/CategorySelector';
 import { Header } from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ServiceCategory, VehicleType, requestOTP, verifyOTP, createProvider } from '@/lib/api';
+import { ServiceCategory, VehicleType, requestOTP, verifyOTP } from '@/lib/api';
 import { apiFetch } from '@/utils/api';
 import { Phone, Building, Radius, Clock, Truck, Bus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -17,6 +17,19 @@ import { useToast } from '@/hooks/use-toast';
 export const ProviderSignup: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const categoryLabels: Record<ServiceCategory, string> = {
+    roadside: 'خدمات جاده‌ای',
+    tire: 'لاستیک و رینگ',
+    recovery: 'امداد و حادثه',
+    oil: 'فروش روغن و فیلتر',
+  };
+
+  const vehicleLabels: Record<VehicleType, string> = {
+    truck: 'کامیون',
+    semi: 'تریلی',
+    bus: 'اتوبوس',
+  };
   
   // Step management
   const [currentStep, setCurrentStep] =
@@ -166,20 +179,36 @@ export const ProviderSignup: React.FC = () => {
 
     setIsLoading(true);
     try {
-      await createProvider({
-        name: companyName,
-        phone,
-        radius_km: parseInt(radius),
-        categories: selectedCategory ? [selectedCategory] : [],
-        is_24_7: is24_7,
-        vehicle_types: selectedVehicleTypes
+      const companyId = localStorage.getItem('provider_company_id');
+      if (!companyId) {
+        throw new Error('شناسه شرکت یافت نشد؛ لطفاً مراحل قبلی را کامل کنید');
+      }
+
+      const typeOfService = selectedCategory ? categoryLabels[selectedCategory] : '';
+      const radiusValue = Number.parseInt(radius, 10);
+      const workingHours = is24_7 ? 'شبانه‌روزی' : 'غیر شبانه‌روزی';
+      const vehicleType = selectedVehicleTypes
+        .map(vehicle => vehicleLabels[vehicle])
+        .join(', ');
+
+      await apiFetch(`/api/signup/company/${companyId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type_of_service: typeOfService,
+          radius_of_activity: Number.isNaN(radiusValue) ? undefined : radiusValue,
+          working_hours: workingHours,
+          vehicle_type: vehicleType,
+          date: new Date().toISOString(),
+        }),
       });
-      
+
       navigate('/signup/success');
     } catch (error) {
       toast({
         title: "خطا در ثبت‌نام",
-        description: "لطفاً دوباره تلاش کنید",
+        description:
+          error instanceof Error ? error.message : "لطفاً دوباره تلاش کنید",
         variant: "destructive",
       });
     } finally {
