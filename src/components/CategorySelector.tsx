@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ServiceCategory } from '@/lib/api';
-import { Truck, Settings, AlertTriangle, Droplet } from 'lucide-react';
+import { Truck, Settings, AlertTriangle, Droplet, Tag } from 'lucide-react';
 
 interface CategorySelectorProps {
   selectedCategory?: ServiceCategory;
@@ -14,7 +14,14 @@ interface CategorySelectorProps {
   onDirectNavigate?: (category: ServiceCategory) => void;
 }
 
-const categories = [
+interface Category {
+  id: number;
+  name: string;
+  companies_count: number;
+}
+
+// Default categories as fallback
+const defaultCategories = [
   {
     id: 'roadside' as ServiceCategory,
     title: 'خدمات جاده‌ای',
@@ -54,6 +61,35 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   directNavigation = false,
   onDirectNavigate,
 }) => {
+  const [categories, setCategories] = useState(defaultCategories);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/admin/categories');
+      if (response.ok) {
+        const data = await response.json();
+        const apiCategories = data.categories.map((cat: Category) => ({
+          id: cat.name as ServiceCategory,
+          title: cat.name,
+          description: `${cat.companies_count} ارائه‌دهنده`,
+          icon: Tag,
+          disabled: false,
+        }));
+        setCategories(apiCategories);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      // Keep default categories on error
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const isSelected = (categoryId: ServiceCategory) => 
     multiSelect ? selectedCategories.includes(categoryId) : selectedCategory === categoryId;
 

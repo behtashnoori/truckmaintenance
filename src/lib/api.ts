@@ -56,6 +56,17 @@ interface ProviderRegistration {
   vehicle_types: VehicleType[];
 }
 
+interface ProviderApplicationInput {
+  companyName: string;
+  representativeFirstName: string;
+  representativeLastName: string;
+  address: string;
+  phoneMobile: string;
+  phoneLandline?: string;
+  serviceDomain: string; // comma-separated for now
+  latitude?: number;
+  longitude?: number;
+}
 
 interface ContactForm {
   name: string;
@@ -333,6 +344,16 @@ class ApiClient {
     return { success: true, data: { status: 'pending' } };
   }
 
+  // Submit provider application
+  async submitProviderApplication(
+    data: ProviderApplicationInput
+  ): Promise<ApiResponse<{ id: number; status: string }>> {
+    return this.request<{ id: number; status: string }>(`/provider-applications`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   // Submit contact form
   async submitContact(data: ContactForm): Promise<ApiResponse<{ success: boolean }>> {
     await new Promise(resolve => setTimeout(resolve, 600));
@@ -358,11 +379,14 @@ export const createProvider = (data: ProviderRegistration, token?: string) =>
 
 export const submitContactForm = (data: ContactForm) => api.submitContact(data);
 
+export const submitProviderApplication = (data: ProviderApplicationInput) => api.submitProviderApplication(data);
+
 export type {
   Provider,
   ProviderSearchResult,
   ServiceCategory,
   VehicleType,
   ProviderRegistration,
+  ProviderApplicationInput,
   ContactForm,
 };

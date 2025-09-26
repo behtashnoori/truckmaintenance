@@ -13,6 +13,26 @@ const Index = () => {
       <h1 className="text-3xl md:text-4xl font-bold mb-8 text-center">
         بازارگاه خدمات اضطراری و تعمیرات خودروهای سنگین
       </h1>
+      
+      {/* Test Admin Panels */}
+      <div className="mb-8">
+        <p className="text-lg mb-4 text-center">✅ منوهای ادمین و کارشناس بازرگانی آماده شد!</p>
+        <div className="flex justify-center gap-4">
+          <Link
+            to="/admin/dashboard"
+            className="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 transition-colors"
+          >
+            پنل ادمین
+          </Link>
+          <Link
+            to="/business-expert/dashboard"
+            className="bg-green-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-600 transition-colors"
+          >
+            پنل کارشناس بازرگانی
+          </Link>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-4 w-full max-w-md p-4">
         {menuItems.map((item) => (
           <Link

@@ -17,10 +17,10 @@ export const SignupSuccess: React.FC = () => {
               <CheckCircle size={32} className="text-green-600" />
             </div>
             <h1 className="text-2xl font-bold text-foreground mb-2">
-              ثبت‌نام با موفقیت انجام شد
+              درخواست ثبت‌نام با موفقیت ارسال شد
             </h1>
             <p className="text-muted-foreground">
-              اطلاعات شما دریافت شد و در حال بررسی است
+              درخواست شما ثبت شد و کارشناس بازرگانی برای بررسی و تایید با شما تماس خواهد گرفت
             </p>
           </div>
 
@@ -30,9 +30,9 @@ export const SignupSuccess: React.FC = () => {
               <div className="flex items-center gap-3">
                 <Clock size={20} className="text-amber-500" />
                 <div>
-                  <h3 className="font-semibold">در انتظار تأیید</h3>
+                  <h3 className="font-semibold">در انتظار بررسی کارشناس بازرگانی</h3>
                   <p className="text-sm text-muted-foreground">
-                    تیم ما اطلاعات شما را در ۲۴ ساعت آینده بررسی خواهد کرد
+                    کارشناس بازرگانی ظرف ۲۴ ساعت آینده برای بررسی و تایید هویت شما تماس خواهد گرفت
                   </p>
                 </div>
               </div>
@@ -40,10 +40,10 @@ export const SignupSuccess: React.FC = () => {
               <div className="border-t pt-4">
                 <h4 className="font-medium mb-2">مراحل بعدی:</h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• بررسی اطلاعات و مدارک ارسالی</li>
-                  <li>• تماس تلفنی برای تأیید نهایی</li>
-                  <li>• فعال‌سازی حساب کاربری</li>
-                  <li>• ارسال اطلاعات ورود به سامانه</li>
+                  <li>• بررسی اطلاعات ثبت شده توسط کارشناس بازرگانی</li>
+                  <li>• تماس تلفنی برای احراز هویت و تایید نهایی</li>
+                  <li>• تایید درخواست و فعال‌سازی در سیستم</li>
+                  <li>• نمایش اطلاعات شرکت در سایت برای مشتریان</li>
                 </ul>
               </div>
             </CardContent>

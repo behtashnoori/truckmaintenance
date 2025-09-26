@@ -1,5 +1,5 @@
-export const API_BASE = import.meta.env.VITE_API_BASE_URL;
-if (!API_BASE) console.error('VITE_API_BASE_URL is not defined');
+export const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+// if (!import.meta.env.VITE_API_BASE_URL) console.warn('VITE_API_BASE_URL is not defined, defaulting to http://localhost:5000');
 
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, '');
 const ensureLeadingSlash = (value: string) => (value.startsWith('/') ? value : `/${value}`);
@@ -28,12 +28,20 @@ const extractErrorMessage = (payload: unknown, fallback: string) => {
 
 export async function apiFetch<T = unknown>(path: string, init?: RequestInit): Promise<T> {
   const base = API_BASE ? trimTrailingSlash(API_BASE) : '';
-  if (!API_BASE) {
-    console.error('Cannot perform request without API base URL');
-  }
 
   const url = `${base}${ensureLeadingSlash(path)}`;
-  const response = await fetch(url, init);
+  const token = localStorage.getItem('auth_token');
+  const headers: HeadersInit = {
+    ...(init?.headers || {}),
+  };
+  if (token) {
+    (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+  }
+  if (!('Content-Type' in (headers as Record<string, string>)) && init?.body) {
+    (headers as Record<string, string>)['Content-Type'] = 'application/json';
+  }
+
+  const response = await fetch(url, { ...init, headers });
 
   const contentType = response.headers.get('content-type') ?? '';
   const expectsJson = contentType.includes('application/json');

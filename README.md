@@ -11,9 +11,8 @@ This project delivers a two-part system for locating and registering heavy vehic
 
 - Python 3
 - Flask, Flask-CORS
-- SQLAlchemy 2 with GeoAlchemy2 (SQL Server)
-- PyJWT for development JWTs
-- Alembic migrations
+- SQLAlchemy 2 (SQL Server via pyodbc)
+- Alembic (Flask-Migrate)
 - React + TypeScript + Vite
 - Tailwind CSS & shadcn/ui
 
@@ -25,8 +24,8 @@ This project delivers a two-part system for locating and registering heavy vehic
 backend/            # Flask application (app factory, models, routes)
   app/              # app factory package
   config.py         # environment variables
-  models.py         # SQLAlchemy models
-  routes.py         # API routes
+  models/           # SQLAlchemy models
+  routes/           # API routes (blueprints)
 migrations/         # Flask-Migrate files
 src/                # React frontend
 ```
@@ -39,6 +38,14 @@ src/                # React frontend
 # داخل venv
 pip install -r requirements.txt
 
+# تنظیم دیتابیس PostgreSQL (اختیاری)
+# مشخصات دیتابیس در backend/db_credentials.py قابل تغییر است
+# ابتدا فایل نمونه را کپی کنید:
+# cp backend/db_credentials.example.py backend/db_credentials.py
+# سپس اطلاعات دیتابیس خود را در آن وارد کنید
+# یا از متغیرهای محیطی استفاده کنید:
+# $env:SQLALCHEMY_DATABASE_URI="postgresql://user:pass@host:port/Marketplace"
+
 # اعمال مایگریشن‌ها (اگر migrations موجود است)
 python -m flask --app backend.app db upgrade
 
@@ -47,7 +54,9 @@ python -m flask --app backend.app db upgrade
 # python -m flask --app backend.app db migrate -m "baseline"
 # python -m flask --app backend.app db upgrade
 
-# اجرا
+# اجرا (پورت قابل‌تغییر با FLASK_RUN_PORT)
+# مثال: در PowerShell
+# $env:FLASK_RUN_PORT=5001
 python -m flask --app backend.app run
 # یا
 flask --app backend.app run
@@ -60,38 +69,18 @@ curl http://localhost:5000/
 # {"status": "ok"}
 ```
 
-### OTP Development Flow
+### Available API (current)
 
-```bash
-# request a one-time code
-curl -X POST /auth/request-otp -d '{"phone":"+98912..."}'
-
-# verify and obtain JWT
-dev_code=123456
-curl -X POST /auth/verify-otp -d '{"phone":"+98912...","code":"123456"}'
-
-# register provider with the JWT
-curl -H 'Authorization: Bearer <token>' -X POST /providers -d '{"name":"...","phone":"+98912...",...}'
-```
-Each phone can request a new code only every 30 seconds. Codes are valid for five minutes.
-
-### API Overview
-
-| Method & Path                | Description |
-|-----------------------------|-------------|
-| `POST /auth/request-otp`    | issue development OTP |
-| `POST /auth/verify-otp`     | verify OTP and receive JWT |
-| `POST /providers`           | register new provider (requires JWT) |
-| `GET /providers`            | search nearby providers with optional filters |
-| `GET /providers/<id>`       | provider details (optionally include `lat`/`lon` to get `distance_km`) |
-| `GET /health`               | service health check |
+| Method & Path     | Description            |
+|-------------------|------------------------|
+| `POST /company`   | Create a company       |
 
 ### Error Format
 
-All errors follow the structure:
+Errors generally follow:
 
 ```json
-{ "error": { "code": "invalid_request", "message": "lat and lon required" } }
+{ "error": "message" }
 ```
 
 ### Pagination
@@ -107,34 +96,39 @@ If the `page` query parameter is supplied to `/providers`, results are wrapped a
 }
 ```
 
-### Docker
-
-Run the API together with SQL Server Express:
-
-```bash
-docker compose up --build
-```
-
-Environment variables (`MSSQL_URI`, `JWT_SECRET`, `FRONTEND_ORIGINS`) can be adjusted in `docker-compose.yml`.
-
 ---
 
-## Frontend Setup
+## Frontend Setup (separate terminal)
 
 ```bash
 npm install
 
-# run frontend only
+# تنظیم متغیرها (اختیاری)
+# پورت و هاست فرانت (پیش‌فرض: 127.0.0.1:5173)
+# PowerShell:
+#   $env:VITE_HOST="127.0.0.1"; $env:VITE_PORT="5174"
+# URL بکند برای فرانت (پیش‌فرض: http://localhost:5000)
+#   $env:VITE_API_BASE_URL="http://localhost:5000"
+
+# اجرای فرانت (ترمینال 1)
 npm run frontend
 
-# run backend only
+# اجرای بکند (ترمینال 2)
+# (برای تغییر پورت بکند: $env:FLASK_RUN_PORT="5001")
 npm run backend
-
-# run both concurrently
-npm run dev
 ```
 
-The Vite development server runs on `http://localhost:1743` and the Flask backend on `http://localhost:5000`.
+The Vite development server defaults to `http://127.0.0.1:5173` (auto-fallback if busy). The Flask backend defaults to `http://localhost:5000`.
+
+---
+
+## Notes
+
+- Database credentials are stored in `backend/db_credentials.py` and can be overridden with environment variables like `SQLALCHEMY_DATABASE_URI`.
+- Ports are configurable via env:
+  - Frontend: `VITE_HOST`, `VITE_PORT`, `VITE_API_BASE_URL`
+  - Backend: `FLASK_RUN_PORT` (or pass `--port` to flask run)
+- Ensure `VITE_API_BASE_URL` points to the backend URL/port you run.
 
 ---
 
