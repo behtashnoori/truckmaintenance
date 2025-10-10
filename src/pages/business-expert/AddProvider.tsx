@@ -1,33 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { PageNavigation } from '@/components/PageNavigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { MapPicker } from '@/components/MapPicker';
 import { useToast } from '@/hooks/use-toast';
-import { Building, MapPin, Phone, User, Save, ArrowLeft } from 'lucide-react';
+import { apiFetch } from '@/utils/api';
+import BusinessExpertLayout from '@/components/business-expert/BusinessExpertLayout';
+import { Building, MapPin, Phone, User, Save } from 'lucide-react';
 
-const SERVICE_CATEGORIES = [
-  'تعمیرات موتور',
-  'تعمیرات گیربکس',
-  'تعمیرات ترمز',
-  'تعمیرات سیستم برق',
-  'تعمیرات سیستم خنک‌کننده',
-  'تعمیرات سیستم سوخت',
-  'تعمیرات سیستم اگزوز',
-  'تعمیرات سیستم تعلیق',
-  'تعمیرات سیستم فرمان',
-  'تعمیرات سیستم تایر',
-  'تعمیرات سیستم کولر',
-  'تعمیرات سیستم گرمایش',
-  'سرویس‌های عمومی',
-  'تعمیرات تخصصی',
-  'سایر'
-];
+interface Category {
+  id: number;
+  name: string;
+}
 
 export const AddProvider: React.FC = () => {
   const navigate = useNavigate();
@@ -35,8 +25,6 @@ export const AddProvider: React.FC = () => {
 
   const [formData, setFormData] = useState({
     companyName: '',
-    representativeFirstName: '',
-    representativeLastName: '',
     address: '',
     phoneMobile: '',
     phoneLandline: '',
@@ -47,6 +35,29 @@ export const AddProvider: React.FC = () => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+
+  // Load categories from API
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const response = await apiFetch('/api/public/categories');
+        setCategories(response.data || []);
+      } catch (error) {
+        console.error('Error loading categories:', error);
+        toast({ 
+          title: 'خطا در دریافت دسته‌بندی‌ها', 
+          description: 'نتوانستیم دسته‌بندی‌ها را بارگذاری کنیم', 
+          variant: 'destructive' 
+        });
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    loadCategories();
+  }, [toast]);
 
   const handleInputChange = (field: string, value: string | number | boolean) => {
     setFormData(prev => ({
@@ -56,13 +67,13 @@ export const AddProvider: React.FC = () => {
   };
 
   const validateForm = () => {
-    const required = ['companyName', 'representativeFirstName', 'representativeLastName', 'address', 'phoneMobile', 'serviceDomain'];
+    const required = ['companyName', 'address', 'phoneMobile', 'serviceDomain'];
     const missing = required.filter(field => !formData[field as keyof typeof formData]);
     
     if (missing.length > 0) {
       toast({
         title: "خطا",
-        description: `لطفاً فیلدهای الزامی را پر کنید: ${missing.join(', ')}`,
+        description: `لطفاً فیلدهای الزامی را پر کنید`,
         variant: "destructive",
       });
       return false;
@@ -76,6 +87,17 @@ export const AddProvider: React.FC = () => {
       });
       return false;
     }
+    
+    // Validate phone number format
+    const phonePattern = /^09\d{9}$/;
+    if (!phonePattern.test(formData.phoneMobile)) {
+      toast({
+        title: "خطا",
+        description: "شماره موبایل باید با فرمت 09xxxxxxxxx باشد",
+        variant: "destructive",
+      });
+      return false;
+    }
 
     return true;
   };
@@ -85,24 +107,16 @@ export const AddProvider: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/business-expert/providers', {
+      await apiFetch('/api/business-expert/providers', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(formData),
       });
 
-      if (response.ok) {
-        toast({
-          title: 'ارائه‌دهنده اضافه شد',
-          description: 'ارائه‌دهنده با موفقیت به سیستم اضافه شد.',
-        });
-        navigate('/business-expert/dashboard');
-      } else {
-        const error = await response.json();
-        throw new Error(error.message || 'خطا در اضافه کردن ارائه‌دهنده');
-      }
+      toast({
+        title: 'ارائه‌دهنده اضافه شد',
+        description: 'ارائه‌دهنده با موفقیت به سیستم اضافه شد.',
+      });
+      navigate('/business-expert/providers');
     } catch (error) {
       console.error('Error adding provider:', error);
       toast({
@@ -116,24 +130,18 @@ export const AddProvider: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6">
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/business-expert/dashboard')}
-            className="mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            بازگشت به داشبورد
-          </Button>
-          
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            اضافه کردن ارائه‌دهنده جدید
-          </h1>
-          <p className="text-muted-foreground">
-            اطلاعات ارائه‌دهنده خدمات را وارد کنید
-          </p>
+    <BusinessExpertLayout>
+      <div className="space-y-6">
+        {/* Page Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              اضافه کردن ارائه‌دهنده جدید
+            </h1>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              اطلاعات ارائه‌دهنده خدمات را وارد کنید
+            </p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -152,29 +160,11 @@ export const AddProvider: React.FC = () => {
                   id="companyName"
                   value={formData.companyName}
                   onChange={(e) => handleInputChange('companyName', e.target.value)}
-                  placeholder="نام مجموعه"
+                  placeholder="مثال: تعمیرگاه رضا"
                 />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="representativeFirstName">نام نماینده *</Label>
-                  <Input
-                    id="representativeFirstName"
-                    value={formData.representativeFirstName}
-                    onChange={(e) => handleInputChange('representativeFirstName', e.target.value)}
-                    placeholder="نام"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="representativeLastName">نام خانوادگی نماینده *</Label>
-                  <Input
-                    id="representativeLastName"
-                    value={formData.representativeLastName}
-                    onChange={(e) => handleInputChange('representativeLastName', e.target.value)}
-                    placeholder="نام خانوادگی"
-                  />
-                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  نام شرکت یا مجموعه ارائه‌دهنده خدمات
+                </p>
               </div>
 
               <div>
@@ -216,18 +206,24 @@ export const AddProvider: React.FC = () => {
                 <Select
                   value={formData.serviceDomain}
                   onValueChange={(value) => handleInputChange('serviceDomain', value)}
+                  disabled={categoriesLoading}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="انتخاب حوزه خدمات" />
+                    <SelectValue placeholder={categoriesLoading ? "در حال بارگذاری..." : "انتخاب حوزه خدمات"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {SERVICE_CATEGORIES.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.name}>
+                        {category.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {categories.length === 0 && !categoriesLoading && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    هیچ دسته‌بندی‌ای یافت نشد
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center space-x-2">
@@ -284,6 +280,6 @@ export const AddProvider: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </BusinessExpertLayout>
   );
 };

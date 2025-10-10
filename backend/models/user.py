@@ -1,7 +1,12 @@
 from ..app import db
-from datetime import datetime
+from datetime import datetime, timezone
 import hashlib
 import secrets
+
+
+def utc_now():
+    """Get current UTC time - used for database defaults"""
+    return datetime.now(timezone.utc)
 
 
 class User(db.Model):
@@ -14,12 +19,13 @@ class User(db.Model):
     full_name = db.Column(db.String(100), nullable=False)
     role = db.Column(db.String(20), nullable=False)  # admin, support
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utc_now)
+    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
     # Relationships
     admin = db.relationship("Admin", backref="user", uselist=False, cascade="all, delete-orphan")
     support_specialist = db.relationship("SupportSpecialist", backref="user", uselist=False, cascade="all, delete-orphan")
+    business_expert = db.relationship("BusinessExpert", backref="user", uselist=False, cascade="all, delete-orphan")
 
     def set_password(self, password):
         """Hash and set password"""
@@ -54,7 +60,7 @@ class Admin(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     permissions = db.Column(db.JSON, default={})
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utc_now)
 
     def to_dict(self):
         """Convert to dictionary"""
@@ -74,7 +80,7 @@ class SupportSpecialist(db.Model):
     department = db.Column(db.String(50))
     max_applications = db.Column(db.Integer, default=50)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utc_now)
 
     def to_dict(self):
         """Convert to dictionary"""
@@ -83,6 +89,26 @@ class SupportSpecialist(db.Model):
             'user_id': self.user_id,
             'department': self.department,
             'max_applications': self.max_applications,
+            'is_active': self.is_active,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class BusinessExpert(db.Model):
+    __tablename__ = "business_experts"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    expertise_area = db.Column(db.String(100))
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=utc_now)
+
+    def to_dict(self):
+        """Convert to dictionary"""
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'expertise_area': self.expertise_area,
             'is_active': self.is_active,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }

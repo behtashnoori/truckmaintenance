@@ -1,4 +1,5 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -11,6 +12,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Bell, Menu, Search, User, LogOut, Settings } from 'lucide-react'
+import { authService } from '@/services/auth'
+import { useToast } from '@/hooks/use-toast'
 
 interface AdminHeaderProps {
   onMenuClick?: () => void
@@ -21,12 +24,49 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
   onMenuClick, 
   showMenuButton = false 
 }) => {
-  // TODO: این مقادیر باید از context یا API دریافت شوند
+  const navigate = useNavigate()
+  const { toast } = useToast()
+  
+  // Get current user from auth service
+  const currentUser = authService.getCurrentUser()
+  
   const user = {
-    name: 'مدیر سیستم',
-    email: 'admin@example.com',
+    name: currentUser?.full_name || 'مدیر سیستم',
+    email: currentUser?.email || 'admin@example.com',
     avatar: '',
     notifications: 5
+  }
+
+  const handleProfile = () => {
+    toast({
+      title: "پروفایل",
+      description: "صفحه پروفایل در حال توسعه است",
+    })
+  }
+
+  const handleSettings = () => {
+    toast({
+      title: "تنظیمات",
+      description: "صفحه تنظیمات در حال توسعه است",
+    })
+  }
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout()
+      toast({
+        title: "خروج موفق",
+        description: "با موفقیت از سیستم خارج شدید",
+      })
+      navigate('/admin/login')
+    } catch (error) {
+      console.error('Logout error:', error)
+      toast({
+        title: "خطا در خروج",
+        description: "لطفاً دوباره تلاش کنید",
+        variant: "destructive",
+      })
+    }
   }
 
   return (
@@ -100,16 +140,16 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuItem className="cursor-pointer" onClick={handleProfile}>
                   <User className="mr-2 h-4 w-4" />
                   <span>پروفایل</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuItem className="cursor-pointer" onClick={handleSettings}>
                   <Settings className="mr-2 h-4 w-4" />
                   <span>تنظیمات</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer text-red-600">
+                <DropdownMenuItem className="cursor-pointer text-red-600" onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>خروج</span>
                 </DropdownMenuItem>

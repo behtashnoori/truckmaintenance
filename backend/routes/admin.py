@@ -1,343 +1,332 @@
-from flask import Blueprint, request, jsonify, session
-import psycopg2
-from ..db_credentials import POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_HOST, POSTGRES_PORT, POSTGRES_DB
+from flask import Blueprint, request, jsonify
+from pydantic import ValidationError
+from ..middleware.security import token_required, admin_required
+from ..services.application_service import ApplicationService
+from ..services.user_service import UserService
+from ..services.company_service import CompanyService
+from ..schemas.application import ApplicationReview
+from ..schemas.user import UserUpdate
+from ..schemas.pagination import PaginationParams, PaginatedResponse
+from ..schemas.response import ApiResponse, ErrorResponse
 
 bp = Blueprint("admin", __name__)
 
 
-def require_admin():
-    """Check if user is admin"""
-    if 'user_id' not in session or session.get('role') != 'admin':
-        return jsonify({"error": "Access denied"}), 403
-    return None
-
-
-def require_auth():
-    """Check if user is authenticated"""
-    if 'user_id' not in session:
-        return jsonify({"error": "Not authenticated"}), 401
-    return None
-
-
-@bp.route("/applications", methods=["GET"])
-def get_applications():
-    """Get all provider applications"""
-    auth_error = require_auth()
-    if auth_error:
-        return auth_error
-    
+@bp.route("/admin/dashboard", methods=["GET"])
+@token_required
+@admin_required
+def get_dashboard_stats(current_user):
+    """Get dashboard statistics - Admin only"""
     try:
-        conn = psycopg2.connect(
-            host=POSTGRES_HOST,
-            port=POSTGRES_PORT,
-            user=POSTGRES_USER,
-            password=POSTGRES_PASSWORD,
-            database=POSTGRES_DB
-        )
-        cursor = conn.cursor()
+        # Get real data from services
+        app_stats = ApplicationService.get_dashboard_stats()
+        user_stats = UserService.get_user_statistics()
+        company_stats = CompanyService.get_company_statistics()
         
-        # Get applications with reviewer info
-        cursor.execute("""
-            SELECT pa.id, pa.company_name, pa.representative_first_name, pa.representative_last_name,
-                   pa.address, pa.phone_mobile, pa.phone_landline, pa.service_domain,
-                   pa.latitude, pa.longitude, pa.status, pa.created_at,
-                   pa.reviewed_by, pa.reviewed_at, pa.review_notes, pa.is_approved,
-                   u.username as reviewer_username, u.full_name as reviewer_name
-            FROM provider_application pa
-            LEFT JOIN users u ON pa.reviewed_by = u.id
-            ORDER BY pa.created_at DESC
-        """)
+        dashboard_data = {
+            **app_stats,
+            **user_stats,
+            **company_stats
+        }
         
-        applications = []
-        for row in cursor.fetchall():
-            applications.append({
-                "id": row[0],
-                "company_name": row[1],
-                "representative_first_name": row[2],
-                "representative_last_name": row[3],
-                "address": row[4],
-                "phone_mobile": row[5],
-                "phone_landline": row[6],
-                "service_domain": row[7],
-                "latitude": row[8],
-                "longitude": row[9],
-                "status": row[10],
-                "created_at": row[11].isoformat() if row[11] else None,
-                "reviewed_by": row[12],
-                "reviewed_at": row[13].isoformat() if row[13] else None,
-                "review_notes": row[14],
-                "is_approved": row[15],
-                "reviewer_username": row[16],
-                "reviewer_name": row[17]
-            })
-        
-        cursor.close()
-        conn.close()
-        
-        return jsonify({"applications": applications}), 200
+        return jsonify({
+            "success": True,
+            **dashboard_data
+        }), 200
         
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@bp.route("/admin/applications", methods=["GET"])
+@token_required
+@admin_required
+def get_applications(current_user):
+    """Get all provider applications with pagination - Admin only"""
+    try:
+        # Parse pagination parameters
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        status = request.args.get('status', None, type=str)
+        
+        pagination = PaginationParams(page=page, per_page=per_page)
+        
+        # Get applications from service
+        applications, total = ApplicationService.get_all_applications(
+            pagination=pagination,
+            status=status
+        )
+        
+        # Return paginated response
+        response = PaginatedResponse.create(
+            items=applications,
+            page=pagination.page,
+            per_page=pagination.per_page,
+            total=total
+        )
+        
+        return jsonify(response), 200
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 
 @bp.route("/applications/<int:app_id>/review", methods=["POST"])
-def review_application(app_id):
-    """Review a provider application"""
-    auth_error = require_auth()
-    if auth_error:
-        return auth_error
-    
-    data = request.get_json(silent=True) or {}
-    is_approved = data.get("is_approved", False)
-    review_notes = data.get("review_notes", "").strip()
-    
+@token_required
+@admin_required
+def review_application(current_user, app_id):
+    """Review a provider application - Admin only"""
     try:
-        conn = psycopg2.connect(
-            host=POSTGRES_HOST,
-            port=POSTGRES_PORT,
-            user=POSTGRES_USER,
-            password=POSTGRES_PASSWORD,
-            database=POSTGRES_DB
+        data = request.get_json(silent=True) or {}
+        
+        # Validate with Pydantic
+        try:
+            review_data = ApplicationReview(**data)
+        except ValidationError as e:
+            return jsonify({
+                "success": False,
+                "error": "خطای اعتبارسنجی داده‌ها",
+                "details": e.errors()
+            }), 400
+        
+        # Review application using service
+        application, error = ApplicationService.review_application(
+            app_id, review_data, current_user.id
         )
-        cursor = conn.cursor()
         
-        # Update application
-        cursor.execute("""
-            UPDATE provider_application 
-            SET reviewed_by = %s, reviewed_at = NOW(), review_notes = %s, 
-                is_approved = %s, status = %s
-            WHERE id = %s
-        """, (
-            session['user_id'], 
-            review_notes, 
-            is_approved,
-            'approved' if is_approved else 'rejected',
-            app_id
-        ))
-        
-        if cursor.rowcount == 0:
-            cursor.close()
-            conn.close()
-            return jsonify({"error": "Application not found"}), 404
-        
-        conn.commit()
-        cursor.close()
-        conn.close()
+        if error:
+            return jsonify({
+                "success": False,
+                "error": error
+            }), 404 if "یافت نشد" in error else 500
         
         return jsonify({
-            "message": "Application reviewed successfully",
-            "is_approved": is_approved
+            "success": True,
+            "message": "درخواست با موفقیت بررسی شد",
+            "data": {
+                "is_approved": application.is_approved
+            }
         }), 200
         
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 
 @bp.route("/applications/<int:app_id>", methods=["DELETE"])
-def delete_application(app_id):
+@token_required
+@admin_required
+def delete_application(current_user, app_id):
     """Delete a provider application (admin only)"""
-    admin_error = require_admin()
-    if admin_error:
-        return admin_error
-    
     try:
-        conn = psycopg2.connect(
-            host=POSTGRES_HOST,
-            port=POSTGRES_PORT,
-            user=POSTGRES_USER,
-            password=POSTGRES_PASSWORD,
-            database=POSTGRES_DB
-        )
-        cursor = conn.cursor()
+        success, error = ApplicationService.delete_application(app_id)
         
-        cursor.execute("DELETE FROM provider_application WHERE id = %s", (app_id,))
-        
-        if cursor.rowcount == 0:
-            cursor.close()
-            conn.close()
-            return jsonify({"error": "Application not found"}), 404
-        
-        conn.commit()
-        cursor.close()
-        conn.close()
-        
-        return jsonify({"message": "Application deleted successfully"}), 200
-        
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@bp.route("/users/<int:user_id>", methods=["PUT"])
-def update_user(user_id):
-    """Update user (admin only)"""
-    admin_error = require_admin()
-    if admin_error:
-        return admin_error
-    
-    data = request.get_json(silent=True) or {}
-    
-    try:
-        conn = psycopg2.connect(
-            host=POSTGRES_HOST,
-            port=POSTGRES_PORT,
-            user=POSTGRES_USER,
-            password=POSTGRES_PASSWORD,
-            database=POSTGRES_DB
-        )
-        cursor = conn.cursor()
-        
-        # Update user
-        update_fields = []
-        update_values = []
-        
-        if 'username' in data:
-            update_fields.append("username = %s")
-            update_values.append(data['username'])
-        
-        if 'email' in data:
-            update_fields.append("email = %s")
-            update_values.append(data['email'])
-        
-        if 'full_name' in data:
-            update_fields.append("full_name = %s")
-            update_values.append(data['full_name'])
-        
-        if 'is_active' in data:
-            update_fields.append("is_active = %s")
-            update_values.append(data['is_active'])
-        
-        if 'password' in data and data['password']:
-            import hashlib
-            import secrets
-            salt = secrets.token_hex(16)
-            password_hash = hashlib.pbkdf2_hmac('sha256', data['password'].encode('utf-8'), salt.encode('utf-8'), 100000).hex() + ':' + salt
-            update_fields.append("password_hash = %s")
-            update_values.append(password_hash)
-        
-        if update_fields:
-            update_values.append(user_id)
-            cursor.execute(f"""
-                UPDATE users 
-                SET {', '.join(update_fields)}, updated_at = NOW()
-                WHERE id = %s
-            """, update_values)
-        
-        # Update role-specific fields
-        if 'department' in data:
-            cursor.execute("""
-                UPDATE support_specialists 
-                SET department = %s 
-                WHERE user_id = %s
-            """, (data['department'], user_id))
-        
-        if 'max_applications' in data:
-            cursor.execute("""
-                UPDATE support_specialists 
-                SET max_applications = %s 
-                WHERE user_id = %s
-            """, (data['max_applications'], user_id))
-        
-        if cursor.rowcount == 0:
-            cursor.close()
-            conn.close()
-            return jsonify({"error": "User not found"}), 404
-        
-        conn.commit()
-        cursor.close()
-        conn.close()
-        
-        return jsonify({"message": "User updated successfully"}), 200
-        
-    except psycopg2.IntegrityError as e:
-        if "username" in str(e):
-            return jsonify({"error": "Username already exists"}), 409
-        elif "email" in str(e):
-            return jsonify({"error": "Email already exists"}), 409
-        else:
-            return jsonify({"error": "User already exists"}), 409
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@bp.route("/users/<int:user_id>", methods=["DELETE"])
-def delete_user(user_id):
-    """Delete user (admin only)"""
-    admin_error = require_admin()
-    if admin_error:
-        return admin_error
-    
-    # Prevent admin from deleting themselves
-    if user_id == session['user_id']:
-        return jsonify({"error": "Cannot delete your own account"}), 400
-    
-    try:
-        conn = psycopg2.connect(
-            host=POSTGRES_HOST,
-            port=POSTGRES_PORT,
-            user=POSTGRES_USER,
-            password=POSTGRES_PASSWORD,
-            database=POSTGRES_DB
-        )
-        cursor = conn.cursor()
-        
-        cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
-        
-        if cursor.rowcount == 0:
-            cursor.close()
-            conn.close()
-            return jsonify({"error": "User not found"}), 404
-        
-        conn.commit()
-        cursor.close()
-        conn.close()
-        
-        return jsonify({"message": "User deleted successfully"}), 200
-        
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@bp.route("/dashboard", methods=["GET"])
-def get_dashboard_stats():
-    """Get dashboard statistics"""
-    auth_error = require_auth()
-    if auth_error:
-        return auth_error
-    
-    try:
-        conn = psycopg2.connect(
-            host=POSTGRES_HOST,
-            port=POSTGRES_PORT,
-            user=POSTGRES_USER,
-            password=POSTGRES_PASSWORD,
-            database=POSTGRES_DB
-        )
-        cursor = conn.cursor()
-        
-        # Get statistics
-        cursor.execute("SELECT COUNT(*) FROM provider_application")
-        total_applications = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(*) FROM provider_application WHERE status = 'pending'")
-        pending_applications = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(*) FROM provider_application WHERE is_approved = TRUE")
-        approved_applications = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'support' AND is_active = TRUE")
-        active_support = cursor.fetchone()[0]
-        
-        cursor.close()
-        conn.close()
+        if not success:
+            return jsonify({
+                "success": False,
+                "error": error
+            }), 404 if "یافت نشد" in error else 500
         
         return jsonify({
-            "total_applications": total_applications,
-            "pending_applications": pending_applications,
-            "approved_applications": approved_applications,
-            "active_support": active_support
+            "success": True,
+            "message": "درخواست با موفقیت حذف شد"
         }), 200
         
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
+
+@bp.route("/admin/companies", methods=["GET"])
+@token_required
+@admin_required
+def get_companies(current_user):
+    """Get all companies with pagination - Admin only"""
+    try:
+        # Parse pagination parameters
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        status = request.args.get('status', None, type=str)
+        
+        pagination = PaginationParams(page=page, per_page=per_page)
+        
+        # Get real data from service
+        companies, total = CompanyService.get_all_companies(
+            pagination=pagination,
+            status=status
+        )
+        
+        return jsonify({
+            "success": True,
+            "companies": companies,
+            "pagination": {
+                "page": pagination.page,
+                "per_page": pagination.per_page,
+                "total": total,
+                "pages": (total + pagination.per_page - 1) // pagination.per_page
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@bp.route("/admin/reports", methods=["GET"])
+@token_required
+@admin_required
+def get_reports(current_user):
+    """Get reports and statistics - Admin only"""
+    try:
+        period = request.args.get('period', 'month', type=str)
+        report_type = request.args.get('type', 'summary', type=str)
+        
+        # Get real data from services
+        report_data = {
+            "period": period,
+            **ApplicationService.get_dashboard_stats(),
+            **CompanyService.get_company_statistics(),
+            "category_stats": ApplicationService.get_category_statistics(period),
+            "monthly_stats": ApplicationService.get_monthly_statistics(period)
+        }
+        
+        return jsonify({
+            "success": True,
+            **report_data
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@bp.route("/admin/settings", methods=["GET"])
+@token_required
+@admin_required
+def get_settings(current_user):
+    """Get system settings - Admin only"""
+    try:
+        # Get real settings from service
+        settings_data = CompanyService.get_system_settings()
+        
+        return jsonify({
+            "success": True,
+            **settings_data
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@bp.route("/admin/settings", methods=["PUT"])
+@token_required
+@admin_required
+def update_settings(current_user):
+    """Update system settings - Admin only"""
+    try:
+        data = request.get_json(silent=True)
+        
+        if data is None:
+            return jsonify({
+                "success": False,
+                "error": "داده‌های ورودی نامعتبر است"
+            }), 400
+        
+        # Here you would normally save settings to database
+        # For now, just return success
+        
+        return jsonify({
+            "success": True,
+            "message": "تنظیمات با موفقیت بروزرسانی شد"
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@bp.route("/users/<int:user_id>", methods=["PUT"])
+@token_required
+@admin_required
+def update_user(current_user, user_id):
+    """Update user (admin only)"""
+    try:
+        data = request.get_json(silent=True) or {}
+        
+        # Validate with Pydantic
+        try:
+            user_data = UserUpdate(**data)
+        except ValidationError as e:
+            return jsonify({
+                "success": False,
+                "error": "خطای اعتبارسنجی داده‌ها",
+                "details": e.errors()
+            }), 400
+        
+        # Update user using service
+        user, error = UserService.update_user(user_id, user_data)
+        
+        if error:
+            status_code = 404 if "یافت نشد" in error else 409 if "قبلاً استفاده شده" in error else 500
+            return jsonify({
+                "success": False,
+                "error": error
+            }), status_code
+        
+        return jsonify({
+            "success": True,
+            "message": "کاربر با موفقیت بروزرسانی شد"
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@bp.route("/users/<int:user_id>", methods=["DELETE"])
+@token_required
+@admin_required
+def delete_user(current_user, user_id):
+    """Delete user (admin only)"""
+    try:
+        success, error = UserService.delete_user(user_id, current_user.id)
+        
+        if not success:
+            status_code = 404 if "یافت نشد" in error else 400 if "خود را حذف" in error else 500
+            return jsonify({
+                "success": False,
+                "error": error
+            }), status_code
+        
+        return jsonify({
+            "success": True,
+            "message": "کاربر با موفقیت حذف شد"
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 

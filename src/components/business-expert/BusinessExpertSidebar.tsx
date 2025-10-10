@@ -1,8 +1,11 @@
-import React from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { apiFetch } from '@/utils/api'
+import { authService } from '@/services/auth'
+import { SessionStatus } from '@/components/SessionStatus'
 import {
   LayoutDashboard,
   Search,
@@ -24,11 +27,35 @@ interface BusinessExpertSidebarProps {
 
 const BusinessExpertSidebar: React.FC<BusinessExpertSidebarProps> = ({ onItemClick }) => {
   const location = useLocation()
+  const navigate = useNavigate()
+  const [pendingReviews, setPendingReviews] = useState<number>(0)
+  const [approvedToday, setApprovedToday] = useState<number>(0)
+  const [monthlyRevenue, setMonthlyRevenue] = useState<string>('0')
+  const currentUser = authService.getCurrentUser()
 
-  // TODO: این مقادیر باید از API دریافت شوند
-  const pendingReviews = 8
-  const approvedToday = 3
-  const monthlyRevenue = '12.5M'
+  // Load sidebar data from API
+  useEffect(() => {
+    const loadSidebarData = async () => {
+      try {
+        // Get pending applications count
+        const pendingResponse = await apiFetch('/api/business-expert/applications?status=pending&per_page=1');
+        setPendingReviews(pendingResponse.total || 0);
+
+        // Get today's approved count (you might need to implement this endpoint)
+        // For now, we'll set it to 0
+        setApprovedToday(0);
+
+        // Get monthly revenue (you might need to implement this endpoint)
+        // For now, we'll set it to 0
+        setMonthlyRevenue('0');
+      } catch (error) {
+        console.error('Error loading sidebar data:', error);
+        // Keep default values on error
+      }
+    };
+
+    loadSidebarData();
+  }, []);
 
   const menuItems = [
     {
@@ -41,7 +68,7 @@ const BusinessExpertSidebar: React.FC<BusinessExpertSidebarProps> = ({ onItemCli
     {
       title: 'بررسی درخواست‌ها',
       icon: Search,
-      href: '/business-expert/review',
+      href: '/business-expert/applications',
       badge: pendingReviews,
       description: 'بررسی و تایید درخواست‌ها'
     },
@@ -53,18 +80,18 @@ const BusinessExpertSidebar: React.FC<BusinessExpertSidebarProps> = ({ onItemCli
       description: 'مدیریت ارائه‌دهندگان خدمات'
     },
     {
-      title: 'گزارش‌های مالی',
-      icon: DollarSign,
-      href: '/business-expert/financial',
-      badge: monthlyRevenue,
-      description: 'گزارش‌های مالی و درآمد'
+      title: 'اضافه کردن ارائه‌دهنده',
+      icon: Upload,
+      href: '/business-expert/providers/add',
+      badge: null,
+      description: 'اضافه کردن ارائه‌دهنده جدید'
     },
     {
-      title: 'ارتباط با مشتریان',
-      icon: MessageCircle,
-      href: '/business-expert/communication',
+      title: 'آپلود انبوه',
+      icon: Upload,
+      href: '/business-expert/providers/bulk-upload',
       badge: null,
-      description: 'پیام‌ها و ارتباطات'
+      description: 'آپلود انبوه ارائه‌دهندگان'
     }
   ]
 
@@ -163,9 +190,15 @@ const BusinessExpertSidebar: React.FC<BusinessExpertSidebarProps> = ({ onItemCli
         <Button 
           variant="ghost" 
           className="w-full justify-start text-red-600 dark:text-red-400"
-          onClick={() => {
-            // TODO: Implement logout logic
-            handleItemClick()
+          onClick={async () => {
+            try {
+              await authService.logout()
+              handleItemClick()
+              navigate('/admin/login')
+            } catch (error) {
+              console.error('Logout error:', error)
+              navigate('/admin/login')
+            }
           }}
         >
           <LogOut className="mr-2 h-4 w-4" />
@@ -177,16 +210,21 @@ const BusinessExpertSidebar: React.FC<BusinessExpertSidebarProps> = ({ onItemCli
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-3 rtl:space-x-reverse">
           <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-            ک
+            {currentUser?.full_name?.charAt(0) || 'ک'}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-              کارشناس بازرگانی
+              {currentUser?.full_name || 'کارشناس بازرگانی'}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-              expert@example.com
+              {currentUser?.email || 'expert@example.com'}
             </p>
           </div>
+        </div>
+        
+        {/* Session Status */}
+        <div className="mt-3">
+          <SessionStatus variant="badge" showTime={true} showIcon={true} />
         </div>
       </div>
     </div>

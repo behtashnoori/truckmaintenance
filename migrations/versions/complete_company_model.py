@@ -1,7 +1,7 @@
 """Complete Company model and add Category
 
 Revision ID: complete_company_model
-Revises: 
+Revises: 001_initial_setup
 Create Date: 2024-01-01 00:00:00.000000
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'complete_company_model'
-down_revision = None
+down_revision = '001_initial_setup'
 branch_labels = None
 depends_on = None
 

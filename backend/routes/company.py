@@ -1,7 +1,14 @@
 from flask import Blueprint, request, jsonify
-from ..app import db
-from ..models.company import Company
-from ..middleware.security import token_required, business_expert_required, validate_input, sanitize_string, validate_phone
+from pydantic import ValidationError
+from ..middleware.security import token_required, business_expert_required
+from ..middleware.logging import log_security_event
+from ..services.company_service import CompanyService
+from ..schemas.company import CompanyCreate
+from ..schemas.response import ApiResponse, ErrorResponse
+import logging
+
+# Configure logger
+logger = logging.getLogger(__name__)
 
 bp = Blueprint("company", __name__)
 
@@ -9,43 +16,85 @@ bp = Blueprint("company", __name__)
 @bp.route("/company", methods=["POST"])
 @token_required
 @business_expert_required
-@validate_input(required_fields=['name', 'phone'], allowed_fields=['name', 'phone', 'companyName', 'tel'])
 def create_company(current_user):
     """
     Create company (business expert only)
-    بدنه‌ی ورودی:
+    Request body (with validation):
     {
-        "phone": "09xxxxxxxxx",
-        "name": "نام شرکت"
+        "phone": "09xxxxxxxxx",  // or "tel"
+        "name": "نام شرکت"  // or "companyName"
     }
     """
-    data = request.get_json()
-    name = sanitize_string(data.get("name") or data.get("companyName") or "")
-    phone = (data.get("phone") or data.get("tel") or "").strip()
-
-    if not name or not phone:
-        return jsonify({"error": "name و phone الزامی هستند"}), 400
-    
-    if not validate_phone(phone):
-        return jsonify({"error": "فرمت شماره تلفن نامعتبر است"}), 400
-
     try:
-        # Check if company already exists
-        existing_company = Company.query.filter_by(phone_mobile=phone).first()
-        if existing_company:
-            return jsonify({"error": "شرکت با این شماره تلفن قبلاً ثبت شده است"}), 409
+        data = request.get_json(silent=True)
         
-        company = Company(
-            name=name,
-            phone_mobile=phone,
-            address="",  # Default empty address
-            latitude=0.0,  # Default coordinates
-            longitude=0.0,
-            is_active=True
+        # Check if JSON is valid
+        if data is None:
+            return jsonify({
+                "success": False,
+                "error": "داده‌های ورودی نامعتبر است"
+            }), 400
+        
+        # Log company creation attempt
+        logger.info(f"Company creation attempt by user {current_user.id} ({current_user.username})")
+        
+        # Handle legacy field names
+        if 'companyName' in data and 'name' not in data:
+            data['name'] = data['companyName']
+        if 'tel' in data and 'phone' not in data:
+            data['phone'] = data['tel']
+        
+        # Validate with Pydantic
+        try:
+            company_data = CompanyCreate(**data)
+        except ValidationError as e:
+            logger.warning(f"Validation error in company creation: {e.errors()}")
+            # Convert Pydantic errors to JSON-serializable format
+            errors = []
+            for error in e.errors():
+                errors.append({
+                    'field': error.get('loc', [''])[0] if error.get('loc') else '',
+                    'message': str(error.get('msg', '')),
+                    'type': error.get('type', '')
+                })
+            return jsonify({
+                "success": False,
+                "error": "خطای اعتبارسنجی داده‌ها",
+                "details": errors
+            }), 400
+        
+        # Create company using service
+        company, error = CompanyService.create_company(company_data, current_user.id)
+        
+        if error:
+            return jsonify({
+                "success": False,
+                "error": error
+            }), 409 if "قبلاً ثبت شده" in error else 500
+        
+        # Log successful creation
+        log_security_event(
+            'company_created',
+            f'Company created: {company.name}',
+            user_id=current_user.id,
+            additional_data={'company_id': company.id, 'company_name': company.name}
         )
-        db.session.add(company)
-        db.session.commit()
-        return jsonify({"id": company.id, "message": "company created"}), 201
+        
+        return jsonify({
+            "success": True,
+            "message": "شرکت با موفقیت ایجاد شد",
+            "data": {"id": company.id}
+        }), 201
+        
     except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Unexpected error creating company: {str(e)}", exc_info=True)
+        log_security_event(
+            'company_creation_error',
+            f'Error creating company: {str(e)}',
+            user_id=current_user.id,
+            additional_data={'error': str(e)}
+        )
+        return jsonify({
+            "success": False,
+            "error": "خطای سرور در ایجاد شرکت"
+        }), 500

@@ -1,6 +1,12 @@
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float, Text, ForeignKey
 from sqlalchemy.orm import relationship
-from backend.app import db
+from ..app import db
+from datetime import datetime, timezone
+
+
+def utc_now():
+    """Get current UTC time - used for database defaults"""
+    return datetime.now(timezone.utc)
 
 
 class ProviderApplication(db.Model):
@@ -17,7 +23,7 @@ class ProviderApplication(db.Model):
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     status = Column(String(50), default='pending')
-    created_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=utc_now)
     reviewed_by = Column(Integer, ForeignKey('users.id'), nullable=True)
     reviewed_at = Column(DateTime, nullable=True)
     review_notes = Column(Text, nullable=True)

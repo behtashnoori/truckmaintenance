@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CategorySelector } from '@/components/CategorySelector';
+import { PageNavigation } from '@/components/PageNavigation';
 import { Header } from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ServiceCategory, submitProviderApplication } from '@/lib/api';
@@ -409,6 +410,9 @@ export const ProviderSignup: React.FC = () => {
               </CardContent>
             </Card>
           )}
+          
+          {/* Navigation */}
+          <PageNavigation position="bottom" variant="floating" className="mt-6" />
         </div>
       </div>
     </div>

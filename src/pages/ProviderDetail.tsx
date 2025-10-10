@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
+import { PageNavigation } from '@/components/PageNavigation';
 import { VehicleChips } from '@/components/VehicleChips';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { api, Provider } from '@/lib/api';
-import { Phone, MapPin, LoaderCircle, ArrowLeft, Clock, Radius } from 'lucide-react';
+import { Phone, MapPin, LoaderCircle, Clock, Radius } from 'lucide-react';
+import { MapViewer } from '@/components/MapViewer';
+// import { NavigationModal } from '@/components/NavigationModal'; // مخفی شده
 
 
 export const ProviderDetail: React.FC = () => {
@@ -14,6 +17,7 @@ export const ProviderDetail: React.FC = () => {
   const [provider, setProvider] = useState<Provider | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // const [showNavigationModal, setShowNavigationModal] = useState(false); // مخفی شده
 
   useEffect(() => {
     if (!id) return;
@@ -26,15 +30,28 @@ export const ProviderDetail: React.FC = () => {
     setIsLoading(true);
     setError(null);
 
-    const response = await api.getProvider(id);
-    
-    if (response.success && response.data) {
-      setProvider(response.data);
-    } else {
-      setError(response.error || 'خطا در بارگذاری اطلاعات');
+    try {
+      // Use fetch directly to get provider details
+      const response = await fetch(`/api/public/providers/${id}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Provider Detail API Response:', data); // Debug log
+        
+        if (data.success && data.data) {
+          setProvider(data.data);
+        } else {
+          setError(data.error || 'خطا در بارگذاری اطلاعات');
+        }
+      } else {
+        setError('خطا در ارتباط با سرور');
+      }
+    } catch (err) {
+      console.error('Error fetching provider:', err);
+      setError('خطا در ارتباط با سرور');
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   const handleCall = () => {
@@ -42,6 +59,10 @@ export const ProviderDetail: React.FC = () => {
       window.location.href = `tel:${provider.phone}`;
     }
   };
+
+  // const handleNavigationClick = () => {
+  //   setShowNavigationModal(true);
+  // }; // مخفی شده
 
   if (isLoading) {
     return (
@@ -75,10 +96,11 @@ export const ProviderDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header title="جزئیات ارائه‌دهنده" />
+      <Header title="جزئیات ارائه‌دهنده" backTo="previous" />
       
       <div className="flex-1 p-6">
         <div className="max-w-md mx-auto space-y-6">
+          
           <div className="text-center space-y-6">
             {/* Header */}
             <div>
@@ -94,15 +116,11 @@ export const ProviderDetail: React.FC = () => {
               <p className="text-muted-foreground">{provider.address}</p>
             </div>
 
-            {/* Distance and Coverage */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-center gap-2 text-primary">
-                <MapPin size={20} />
-                <span className="font-semibold">{provider.distance_km.toFixed(1)} کیلومتر فاصله</span>
-              </div>
-              <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm">
+            {/* Coverage Info */}
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm mb-4">
                 <Radius size={16} />
-                <span>پوشش تا {provider.radius_km} کیلومتر</span>
+                <span>پوشش تا {provider.radius_km || 50} کیلومتر</span>
               </div>
             </div>
 
@@ -120,13 +138,15 @@ export const ProviderDetail: React.FC = () => {
             <div>
               <h3 className="text-lg font-semibold mb-3">خدمات ارائه‌شده</h3>
               <div className="flex flex-wrap gap-2 justify-center">
-                {provider.categories.map((category) => (
-                  <Badge key={category} variant="secondary">
-                    {category === 'roadside' ? 'خدمات کنار جاده' :
-                     category === 'tire' ? 'لاستیک و چرخ' :
-                     category === 'recovery' ? 'بازیابی و امداد' : category}
-                  </Badge>
-                ))}
+                {provider.categories && provider.categories.length > 0 ? (
+                  provider.categories.map((category) => (
+                    <Badge key={category} variant="secondary">
+                      {category}
+                    </Badge>
+                  ))
+                ) : (
+                  <p className="text-muted-foreground">خدمات تعریف نشده</p>
+                )}
               </div>
             </div>
 
@@ -134,32 +154,60 @@ export const ProviderDetail: React.FC = () => {
             <div>
               <h3 className="text-lg font-semibold mb-3">وسایل نقلیه قابل سرویس</h3>
               <div className="flex justify-center">
-                <VehicleChips vehicleTypes={provider.vehicle_types} />
+                {provider.vehicle_types && provider.vehicle_types.length > 0 ? (
+                  <VehicleChips vehicleTypes={provider.vehicle_types} />
+                ) : (
+                  <p className="text-muted-foreground">همه انواع وسایل نقلیه</p>
+                )}
               </div>
             </div>
 
-            {/* Map placeholder */}
-            <div className="bg-muted rounded-lg h-48 flex items-center justify-center">
-              <div className="text-center text-muted-foreground">
-                <MapPin size={32} className="mx-auto mb-2" />
-                <p className="text-sm">نقشه موقعیت</p>
-                <p className="text-xs">عرض: {provider.location.lat.toFixed(6)}</p>
-                <p className="text-xs">طول: {provider.location.lon.toFixed(6)}</p>
+            {/* Map & Navigation */}
+            {provider.location ? (
+              <div>
+                <h3 className="text-lg font-semibold mb-3">موقعیت و مسیریابی</h3>
+                <MapViewer 
+                  lat={provider.location.lat} 
+                  lon={provider.location.lon}
+                  title={provider.name}
+                  height={250}
+                />
+                
+                {/* Navigation Button - مخفی شده */}
+                {/* <Button 
+                  onClick={handleNavigationClick}
+                  className="w-full mt-3"
+                  size="lg"
+                >
+                  <Navigation className="mr-2 h-4 w-4" />
+                  مسیریابی
+                </Button> */}
               </div>
-            </div>
+            ) : (
+              <div className="bg-muted rounded-lg h-48 flex items-center justify-center">
+                <div className="text-center text-muted-foreground">
+                  <MapPin size={32} className="mx-auto mb-2" />
+                  <p className="text-sm">موقعیت نامشخص</p>
+                </div>
+              </div>
+            )}
 
-            {/* Back Button */}
-            <Button 
-              onClick={() => navigate(-1)}
-              variant="outline"
-              className="w-full"
-            >
-              <ArrowLeft className="ml-2" size={16} />
-              بازگشت به نتایج
-            </Button>
           </div>
         </div>
       </div>
+
+      {/* Navigation Modal - مخفی شده */}
+      {/* {provider && (
+        <NavigationModal
+          isOpen={showNavigationModal}
+          onClose={() => setShowNavigationModal(false)}
+          providerLocation={{
+            lat: provider.location.lat,
+            lon: provider.location.lon
+          }}
+          providerName={provider.name}
+        />
+      )} */}
     </div>
   );
 };

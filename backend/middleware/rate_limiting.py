@@ -19,6 +19,11 @@ def rate_limit(max_requests=100, window_seconds=60):
     def decorator(f):
         @wraps(f)
         def decorated(*args, **kwargs):
+            # Disable rate limiting in testing mode
+            from flask import current_app
+            if current_app.config.get('TESTING'):
+                return f(*args, **kwargs)
+            
             # Get client IP
             client_ip = request.remote_addr
             
@@ -57,6 +62,11 @@ def login_rate_limit(max_attempts=5, window_minutes=15):
     def decorator(f):
         @wraps(f)
         def decorated(*args, **kwargs):
+            # Disable rate limiting in testing mode
+            from flask import current_app
+            if current_app.config.get('TESTING'):
+                return f(*args, **kwargs)
+            
             client_ip = request.remote_addr
             current_time = time.time()
             window_start = current_time - (window_minutes * 60)

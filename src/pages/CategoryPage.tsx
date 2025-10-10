@@ -18,38 +18,39 @@ interface CategoryInfo {
   subcategories: string[];
 }
 
-const categoryMap: Record<string, CategoryInfo> = {
-  roadside: {
-    id: 'roadside',
-    title: 'خدمات جاده‌ای',
-    subtitle: 'پارکینگ، سوخت و رستوران',
-    subcategories: ['پارکینگ', 'سوخت', 'رستوران']
+interface DBCategory {
+  id: number;
+  name: string;
+}
+
+// Fallback categories if database is not available
+const fallbackCategoryMap: Record<string, CategoryInfo> = {
+  'مکانیکی': {
+    id: 'مکانیکی' as ServiceCategory,
+    title: 'مکانیکی',
+    subtitle: 'خدمات مکانیکی خودروهای سنگین',
+    subcategories: ['تعمیر موتور', 'تعمیر گیربکس', 'تعمیر ترمز']
   },
-  'tyre-wheel': {
-    id: 'tire',
-    title: 'لاستیک و رینگ',
-    subtitle: 'تعمیر و تعویض لاستیک',
-    subcategories: ['پنچرگیری', 'تعویض', 'تنظیم باد']
+  'تعویض-روغن': {
+    id: 'تعویض-روغن' as ServiceCategory,
+    title: 'تعویض روغن',
+    subtitle: 'تعویض روغن و فیلتر',
+    subcategories: ['روغن موتور', 'فیلتر روغن', 'روغن گیربکس']
   },
-  'recovery-accident': {
-    id: 'recovery',
-    title: 'امداد و حادثه',
-    subtitle: 'یدک‌کش و امداد جاده‌ای',
-    subcategories: ['یدک‌کش', 'امداد', 'جرثقیل']
-  },
-  'oil-filter': {
-    id: 'oil',
-    title: 'فروش روغن و فیلتر',
-    subtitle: 'نمایندگی‌ها و فروشگاه‌های روغن',
-    subcategories: ['روغن', 'فیلتر', 'لوازم یدکی']
+  'لوازم-یدکی': {
+    id: 'لوازم-یدکی' as ServiceCategory,
+    title: 'لوازم یدکی',
+    subtitle: 'فروش و تامین لوازم یدکی',
+    subcategories: ['قطعات موتور', 'قطعات گیربکس', 'قطعات ترمز']
   }
 };
 
-const locations = [
-  { name: 'تهران', lat: 35.6892, lon: 51.3890 },
-  { name: 'اصفهان', lat: 32.6539, lon: 51.6660 },
-  { name: 'مشهد', lat: 36.2605, lon: 59.6168 }
-];
+interface LocationOption {
+  name: string;
+  lat: number;
+  lon: number;
+  type: 'province' | 'city';
+}
 
 export const CategoryPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -65,8 +66,81 @@ export const CategoryPage: React.FC = () => {
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleType | 'all'>('all');
   const [manualLocation, setManualLocation] = useState<{lat: number; lon: number} | null>(null);
   const [selectedLocationName, setSelectedLocationName] = useState<string | undefined>();
+  const [locations, setLocations] = useState<LocationOption[]>([]);
+  const [locationsLoading, setLocationsLoading] = useState(false);
+  const [categories, setCategories] = useState<DBCategory[]>([]);
+  const [categoryInfo, setCategoryInfo] = useState<CategoryInfo | null>(null);
 
-  const categoryInfo = slug ? categoryMap[slug] : null;
+  // Load categories from API
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const response = await fetch('/api/public/categories');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data) {
+            setCategories(data.data);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading categories:', error);
+      }
+    };
+
+    loadCategories();
+  }, []);
+
+  // Set category info based on slug and loaded categories
+  useEffect(() => {
+    if (slug && categories.length > 0) {
+      // Try to find category by slug (converted from name)
+      const category = categories.find(cat => 
+        cat.name.toLowerCase().replace(/\s+/g, '-') === slug
+      );
+      
+      if (category) {
+        setCategoryInfo({
+          id: category.name.toLowerCase().replace(/\s+/g, '-') as ServiceCategory,
+          title: category.name,
+          subtitle: `${category.name} - خدمات تخصصی`,
+          subcategories: [`${category.name} تخصصی`, 'تعمیرات', 'نصب']
+        });
+      } else if (fallbackCategoryMap[slug]) {
+        setCategoryInfo(fallbackCategoryMap[slug]);
+      }
+    }
+  }, [slug, categories]);
+
+  // Load locations from API
+  useEffect(() => {
+    const loadLocations = async () => {
+      setLocationsLoading(true);
+      try {
+        const response = await api.getLocations();
+        if (response.success && response.data) {
+          setLocations(response.data);
+        } else {
+          toast({
+            title: "خطا در بارگذاری استان‌ها",
+            description: response.error || "لطفاً دوباره تلاش کنید",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        toast({
+          title: "خطا در بارگذاری استان‌ها",
+          description: "لطفاً دوباره تلاش کنید",
+          variant: "destructive",
+        });
+      } finally {
+        setLocationsLoading(false);
+      }
+    };
+
+    if (categoryInfo?.id === 'oil') {
+      loadLocations();
+    }
+  }, [categoryInfo]);
 
   useEffect(() => {
     if (!categoryInfo) {
@@ -92,6 +166,16 @@ export const CategoryPage: React.FC = () => {
   useEffect(() => {
     applyVehicleFilter();
   }, [selectedVehicle, providers]);
+
+  // Set manualLocation when selectedLocationName changes
+  useEffect(() => {
+    if (selectedLocationName) {
+      const location = locations.find(loc => loc.name === selectedLocationName);
+      if (location) {
+        setManualLocation({ lat: location.lat, lon: location.lon });
+      }
+    }
+  }, [selectedLocationName]);
 
   const fetchProviders = async () => {
     if (!categoryInfo) return;
@@ -182,7 +266,7 @@ export const CategoryPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header title={categoryInfo.title} />
+      <Header title={categoryInfo.title} backTo="services" />
       
       {/* Category Info */}
       <div className="gradient-hero text-white p-6 text-center">
@@ -208,14 +292,21 @@ export const CategoryPage: React.FC = () => {
               />
             </div>
             {categoryInfo.id === 'oil' ? (
-              <LocationSelector
-                locations={locations}
-                value={selectedLocationName}
-                onSelect={(loc) => {
-                  setSelectedLocationName(loc.name);
-                  setManualLocation({ lat: loc.lat, lon: loc.lon });
-                }}
-              />
+              locationsLoading ? (
+                <div className="flex items-center gap-2 min-w-0">
+                  <MapPin size={16} className="text-muted-foreground flex-shrink-0" />
+                  <div className="w-24 h-9 bg-muted animate-pulse rounded"></div>
+                </div>
+              ) : (
+                <LocationSelector
+                  locations={locations}
+                  value={selectedLocationName}
+                  onSelect={(loc) => {
+                    setSelectedLocationName(loc.name);
+                    setManualLocation({ lat: loc.lat, lon: loc.lon });
+                  }}
+                />
+              )
             ) : (
               <Button
                 variant="outline"
@@ -276,9 +367,11 @@ export const CategoryPage: React.FC = () => {
             {filteredProviders.map((provider) => (
               <ProviderCard key={provider.id} provider={provider} />
             ))}
+            
           </div>
         )}
       </div>
+      
     </div>
   );
 };

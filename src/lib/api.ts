@@ -38,6 +38,13 @@ interface ProviderSearchResult {
 type ServiceCategory = 'roadside' | 'tire' | 'recovery' | 'oil';
 type VehicleType = 'truck' | 'semi' | 'bus';
 
+interface LocationOption {
+  name: string;
+  lat: number;
+  lon: number;
+  type: 'province' | 'city';
+}
+
 interface OtpRequest {
   phone: string;
 }
@@ -75,153 +82,6 @@ interface ContactForm {
   message: string;
 }
 
-// Mock data for development
-const mockProviders: Provider[] = [
-  {
-    id: '1',
-    name: 'امداد جاده‌ای آریا',
-    phone: '+989121234567',
-    address: 'تهران–قم، کیلومتر ۲۵',
-    distance_km: 3.2,
-    categories: ['recovery'],
-    location: { lat: 35.7219, lon: 51.3347 },
-    radius_km: 60,
-    is_24_7: true,
-    vehicle_types: ['truck', 'semi']
-  },
-  {
-    id: '2',
-    name: 'خدمات لاستیک پارس',
-    phone: '+989129876543',
-    address: 'اتوبان کرج، نبش خیابان آزادی',
-    distance_km: 7.8,
-    categories: ['tire'],
-    location: { lat: 35.7419, lon: 51.3047 },
-    radius_km: 45,
-    is_24_7: false,
-    vehicle_types: ['truck', 'bus']
-  },
-  {
-    id: '3',
-    name: 'پارکینگ و رستوران سروش',
-    phone: '+989125557890',
-    address: 'جاده ساوه، کیلومتر ۱۵',
-    distance_km: 12.5,
-    categories: ['roadside'],
-    location: { lat: 35.6719, lon: 51.2747 },
-    radius_km: 30,
-    is_24_7: true,
-    vehicle_types: ['truck', 'semi', 'bus']
-  },
-  {
-    id: '4',
-    name: 'یدک‌کش شبانه‌روزی احمد',
-    phone: '+989123456789',
-    address: 'بزرگراه آزادگان، خروجی کرج',
-    distance_km: 5.1,
-    categories: ['recovery'],
-    location: { lat: 35.6919, lon: 51.2647 },
-    radius_km: 80,
-    is_24_7: true,
-    vehicle_types: ['truck', 'semi']
-  },
-  {
-    id: '5',
-    name: 'تعمیرگاه لاستیک شریف',
-    phone: '+989127654321',
-    address: 'شهر قدس، خیابان امام خمینی',
-    distance_km: 8.9,
-    categories: ['tire'],
-    location: { lat: 35.8019, lon: 51.1547 },
-    radius_km: 25,
-    is_24_7: false,
-    vehicle_types: ['truck']
-  },
-  {
-    id: '6',
-    name: 'مجتمع خدماتی بهشت',
-    phone: '+989132223333',
-    address: 'جاده اصفهان، کیلومتر ۴۵',
-    distance_km: 15.2,
-    categories: ['roadside'],
-    location: { lat: 35.7319, lon: 51.1947 },
-    radius_km: 50,
-    is_24_7: true,
-    vehicle_types: ['truck', 'semi', 'bus']
-  },
-  {
-    id: '7',
-    name: 'امداد سریع کامیون',
-    phone: '+989111112222',
-    address: 'اتوبان کرج–قزوین، استراحتگاه مهرشهر',
-    distance_km: 22.0,
-    categories: ['recovery'],
-    location: { lat: 35.6419, lon: 51.2347 },
-    radius_km: 40,
-    is_24_7: false,
-    vehicle_types: ['truck', 'semi']
-  },
-  {
-    id: '8',
-    name: 'لاستیک فروشی رضا',
-    phone: '+989144445555',
-    address: 'شهریار، میدان امام حسین',
-    distance_km: 11.7,
-    categories: ['tire'],
-    location: { lat: 35.7519, lon: 51.2847 },
-    radius_km: 35,
-    is_24_7: false,
-    vehicle_types: ['truck', 'bus']
-  },
-  {
-    id: '9',
-    name: 'جایگاه سوخت و پارکینگ ملی',
-    phone: '+989155556666',
-    address: 'آزادراه تهران–شمال، کیلومتر ۳۲',
-    distance_km: 18.4,
-    categories: ['roadside'],
-    location: { lat: 35.7819, lon: 51.3647 },
-    radius_km: 20,
-    is_24_7: true,
-    vehicle_types: ['truck', 'semi', 'bus']
-  },
-  {
-    id: '10',
-    name: 'خدمات اتوبوسی آسمان',
-    phone: '+989166667777',
-    address: 'ورامین، خیابان شهید بهشتی',
-    distance_km: 25.3,
-    categories: ['roadside', 'tire'],
-    location: { lat: 35.6119, lon: 51.3947 },
-    radius_km: 55,
-    is_24_7: false,
-    vehicle_types: ['bus']
-  },
-  {
-    id: '11',
-    name: 'روغن فروشی تهران',
-    phone: '+989177788899',
-    address: 'تهران، خیابان انقلاب',
-    distance_km: 4.2,
-    categories: ['oil'],
-    location: { lat: 35.6892, lon: 51.3890 },
-    radius_km: 30,
-    is_24_7: false,
-    vehicle_types: ['truck', 'semi']
-  },
-  {
-    id: '12',
-    name: 'فروشگاه فیلتر اصفهان',
-    phone: '+989188899900',
-    address: 'اصفهان، میدان نقش جهان',
-    distance_km: 3.5,
-    categories: ['oil'],
-    location: { lat: 32.6539, lon: 51.6660 },
-    radius_km: 25,
-    is_24_7: true,
-    vehicle_types: ['truck']
-  }
-];
 
 class ApiClient {
   private async request<T>(
@@ -253,85 +113,45 @@ class ApiClient {
     category?: ServiceCategory,
     vehicle?: VehicleType
   ): Promise<ApiResponse<ProviderSearchResult[]>> {
-    // Mock implementation for development
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+    const params = new URLSearchParams({
+      lat: lat.toString(),
+      lon: lon.toString(),
+    });
     
-    let filteredProviders = mockProviders;
-
     if (category) {
-      filteredProviders = filteredProviders.filter(p => p.categories.includes(category));
+      params.append('category', category);
     }
-
+    
     if (vehicle) {
-      filteredProviders = filteredProviders.filter(p => p.vehicle_types.includes(vehicle));
+      params.append('vehicle', vehicle);
     }
 
-    const toRad = (value: number) => (value * Math.PI) / 180;
-    const calcDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-      const R = 6371; // km
-      const dLat = toRad(lat2 - lat1);
-      const dLon = toRad(lon2 - lon1);
-      const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
-    };
-
-    filteredProviders = filteredProviders
-      .map(p => ({
-        ...p,
-        distance_km: calcDistance(lat, lon, p.location.lat, p.location.lon)
-      }))
-      .filter(p => p.distance_km <= p.radius_km)
-      .sort((a, b) => a.distance_km - b.distance_km);
-
-    const results: ProviderSearchResult[] = filteredProviders.map(p => ({
-      id: p.id,
-      name: p.name,
-      phone: p.phone,
-      address: p.address,
-      distance_km: Math.round(p.distance_km * 10) / 10,
-      is_24_7: p.is_24_7,
-      vehicle_types: p.vehicle_types,
-      radius_km: p.radius_km,
-      categories: p.categories
-    }));
-
-    return { success: true, data: results };
+    return this.request<ProviderSearchResult[]>(`/api/public/providers?${params}`, {
+      method: 'GET',
+    });
   }
 
   // Get provider details
   async getProvider(id: string): Promise<ApiResponse<Provider>> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const provider = mockProviders.find(p => p.id === id);
-    if (!provider) {
-      return { success: false, error: 'ارائه‌دهنده یافت نشد' };
-    }
-
-    return { success: true, data: provider };
+    return this.request<Provider>(`/api/public/providers/${id}`, {
+      method: 'GET',
+    });
   }
 
   // Request OTP for phone verification
   async requestOtp(phone: string): Promise<ApiResponse<{ success: boolean }>> {
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Mock success response
-    return { success: true, data: { success: true } };
+    return this.request<{ success: boolean }>('/auth/request-otp', {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    });
   }
 
   // Verify OTP code
   async verifyOtp(phone: string, code: string): Promise<ApiResponse<{ token: string }>> {
-    await new Promise(resolve => setTimeout(resolve, 600));
-
-    // Mock verification - accept any 6-digit code
-    if (code.length === 6) {
-      return { success: true, data: { token: 'mock-jwt-token' } };
-    }
-
-    return { success: false, error: 'کد تأیید نامعتبر است' };
+    return this.request<{ token: string }>('/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ phone, code }),
+    });
   }
 
   // Register new provider
@@ -339,9 +159,13 @@ class ApiClient {
     data: ProviderRegistration,
     token: string
   ): Promise<ApiResponse<{ status: string }>> {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    return { success: true, data: { status: 'pending' } };
+    return this.request<{ status: string }>('/provider-registration', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
   }
 
   // Submit provider application
@@ -356,9 +180,17 @@ class ApiClient {
 
   // Submit contact form
   async submitContact(data: ContactForm): Promise<ApiResponse<{ success: boolean }>> {
-    await new Promise(resolve => setTimeout(resolve, 600));
-    
-    return { success: true, data: { success: true } };
+    return this.request<{ success: boolean }>('/contact', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Get locations (provinces and cities)
+  async getLocations(): Promise<ApiResponse<LocationOption[]>> {
+    return this.request<LocationOption[]>('/api/public/locations', {
+      method: 'GET',
+    });
   }
 }
 

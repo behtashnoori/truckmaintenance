@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ServiceCategory } from '@/lib/api';
 import { Truck, Settings, AlertTriangle, Droplet, Tag } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface CategorySelectorProps {
   selectedCategory?: ServiceCategory;
@@ -17,7 +18,7 @@ interface CategorySelectorProps {
 interface Category {
   id: number;
   name: string;
-  companies_count: number;
+  companies_count?: number;
 }
 
 // Default categories as fallback
@@ -63,6 +64,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
 }) => {
   const [categories, setCategories] = useState(defaultCategories);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchCategories();
@@ -70,17 +72,19 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/admin/categories');
+      const response = await fetch('/api/public/categories');
       if (response.ok) {
         const data = await response.json();
-        const apiCategories = data.categories.map((cat: Category) => ({
-          id: cat.name as ServiceCategory,
-          title: cat.name,
-          description: `${cat.companies_count} ارائه‌دهنده`,
-          icon: Tag,
-          disabled: false,
-        }));
-        setCategories(apiCategories);
+        if (data.success && data.data) {
+          const apiCategories = data.data.map((cat: Category) => ({
+            id: cat.name.toLowerCase().replace(/\s+/g, '-') as ServiceCategory,
+            title: cat.name,
+            description: `${cat.companies_count || 0} ارائه‌دهنده`,
+            icon: Tag,
+            disabled: false,
+          }));
+          setCategories(apiCategories);
+        }
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -100,19 +104,35 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
       onCategorySelect(categoryId);
     }
   };
+
+  const handleCategoryNavigation = (categoryId: ServiceCategory, providerCount: number) => {
+    if (providerCount === 0) {
+      // Show friendly toast message for categories with 0 providers
+      toast({
+        title: "هنوز ارائه‌دهنده‌ای ثبت‌نام نکرده",
+        description: `در حوزه ${categoryId} هنوز کسی ثبت‌نام نکرده است. شما می‌توانید اولین ارائه‌دهنده باشید!`,
+        variant: "default",
+      });
+      return;
+    }
+    
+    // Navigate to category providers page
+    window.location.href = `/category/${categoryId}`;
+  };
   if (variant === 'compact') {
     return (
       <div className={`flex gap-2 ${className}`}>
         {categories.map((category) => {
           const Icon = category.icon;
           const categorySelected = isSelected(category.id);
+          const providerCount = parseInt(category.description.split(' ')[0]) || 0;
           
         return (
           <Button
             key={category.id}
             variant={categorySelected ? 'default' : 'outline'}
             size="sm"
-            onClick={category.disabled ? undefined : () => handleCategoryClick(category.id)}
+            onClick={category.disabled ? undefined : () => handleCategoryNavigation(category.id, providerCount)}
             className="flex-1"
             disabled={category.disabled}
           >
@@ -130,13 +150,14 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
       {categories.map((category) => {
         const Icon = category.icon;
         const categorySelected = isSelected(category.id);
+        const providerCount = parseInt(category.description.split(' ')[0]) || 0;
 
         return (
           <Button
             key={category.id}
             variant={categorySelected ? 'default' : 'outline'}
             className="h-auto p-4 flex flex-col items-center text-center"
-            onClick={category.disabled ? undefined : () => handleCategoryClick(category.id)}
+            onClick={category.disabled ? undefined : () => handleCategoryNavigation(category.id, providerCount)}
             disabled={category.disabled}
           >
             <Icon size={32} className="mb-2" />

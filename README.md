@@ -28,6 +28,20 @@ backend/            # Flask application (app factory, models, routes)
   routes/           # API routes (blueprints)
 migrations/         # Flask-Migrate files
 src/                # React frontend
+scripts/            # Utility scripts and CLI tools
+  create_admin.py   # Create admin user
+  celery_worker.py  # Celery background worker
+  run_backend.py    # Run backend server
+tests/              # Test suite (organized by type)
+  api/              # API endpoint tests
+  admin/            # Admin panel tests
+  performance/      # Performance tests
+  unit/             # Unit tests
+  integration/      # Integration tests
+docs/               # Documentation and reports
+  test-reports/     # Test reports
+  improvements/     # Improvement documentation
+  api/              # API documentation
 ```
 
 ---
@@ -119,6 +133,69 @@ npm run backend
 ```
 
 The Vite development server defaults to `http://127.0.0.1:5173` (auto-fallback if busy). The Flask backend defaults to `http://localhost:5000`.
+
+---
+
+## Utility Scripts
+
+The project includes several utility scripts for common tasks. See [scripts/README.md](scripts/README.md) for details.
+
+### Create Admin User
+```bash
+python scripts/create_admin.py
+```
+
+### Create Business Expert User
+```bash
+python scripts/create_business_expert.py
+```
+
+### Reset Admin Password
+```bash
+python scripts/reset_admin_password.py
+```
+
+### Run Celery Worker
+```bash
+python scripts/celery_worker.py
+```
+
+---
+
+## Testing
+
+The project includes a comprehensive test suite organized by test type. See [tests/README.md](tests/README.md) for details.
+
+### Run All Tests
+```bash
+pytest tests/
+```
+
+### Run Specific Test Categories
+```bash
+pytest tests/api/          # API tests
+pytest tests/admin/        # Admin panel tests
+pytest tests/performance/  # Performance tests
+pytest tests/unit/         # Unit tests
+pytest tests/integration/  # Integration tests
+```
+
+### Run with Coverage
+```bash
+pytest tests/ --cov=backend --cov-report=html
+```
+
+---
+
+## Documentation
+
+All project documentation, test reports, and improvement documents are organized in the `docs/` directory:
+
+- **docs/test-reports/** - Test reports (API, Authentication, Performance, etc.)
+- **docs/improvements/** - Improvement and enhancement documentation
+- **docs/api/** - API integration and feature documentation
+
+For more details, see [docs/README.md](docs/README.md).
 
 ---
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { PageNavigation } from '@/components/PageNavigation';
 import { apiFetch } from '@/utils/api';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Tag, Plus, Settings } from 'lucide-react';
@@ -40,12 +41,12 @@ export default function AdminDashboard() {
   const loadDashboardData = async () => {
     try {
       const [statsResponse, applicationsResponse] = await Promise.all([
-        apiFetch('/dashboard'),
-        apiFetch('/applications')
+        apiFetch('/api/admin/dashboard'),
+        apiFetch('/api/admin/applications')
       ]);
       
       setStats(statsResponse);
-      setApplications(applicationsResponse.applications);
+      setApplications(applicationsResponse.applications || []);
     } catch (err) {
       console.error('Error loading dashboard:', err);
     } finally {
@@ -55,7 +56,7 @@ export default function AdminDashboard() {
 
   const handleLogout = async () => {
     try {
-      await apiFetch('/logout', { method: 'POST' });
+      await apiFetch('/api/logout', { method: 'POST' });
       navigate('/admin/login');
     } catch (err) {
       console.error('Error logging out:', err);
@@ -219,6 +220,9 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
+          
+          {/* Navigation */}
+          <PageNavigation position="bottom" variant="floating" homePath="/admin/dashboard" hideHome />
         </div>
       </div>
     </AdminLayout>

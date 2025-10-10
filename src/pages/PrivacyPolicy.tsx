@@ -1,6 +1,7 @@
 import React from 'react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { PageNavigation } from '@/components/PageNavigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Shield, Lock, Eye, Database, UserCheck } from 'lucide-react';
 
@@ -12,6 +13,9 @@ export const PrivacyPolicy: React.FC = () => {
       <Header title="سیاست حفظ حریم خصوصی" />
       
       <div className="flex-1 p-6 space-y-6">
+        {/* Navigation */}
+        <PageNavigation position="top" variant="inline" />
+        
         {/* Header */}
         <Card>
           <CardContent className="p-6 text-center">
@@ -195,6 +199,9 @@ export const PrivacyPolicy: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+        
+        {/* Bottom Navigation */}
+        <PageNavigation position="bottom" variant="floating" />
       </div>
 
       <Footer />

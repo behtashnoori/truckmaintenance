@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { apiFetch } from '@/utils/api';
+import { useToast } from '@/hooks/use-toast';
 import BusinessExpertLayout from '@/components/business-expert/BusinessExpertLayout';
 import { 
   TrendingUp, 
@@ -44,6 +45,7 @@ export default function BusinessExpertDashboard() {
   const [pendingApplications, setPendingApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     loadDashboardData();
@@ -51,47 +53,31 @@ export default function BusinessExpertDashboard() {
 
   const loadDashboardData = async () => {
     try {
-      // TODO: Replace with actual API calls
-      // const [statsResponse, activitiesResponse] = await Promise.all([
-      //   apiFetch('/business-expert/dashboard'),
-      //   apiFetch('/business-expert/activities')
-      // ]);
+      setLoading(true);
       
-      // Mock data for now
-      setStats({
-        pending_reviews: 8,
-        approved_today: 3,
-        monthly_revenue: '12.5M',
-        total_companies: 156,
-        review_efficiency: 85,
-        customer_satisfaction: 92
-      });
-
-      setRecentActivities([
-        {
-          id: 1,
-          company_name: 'شرکت تعمیرات سنگین آریا',
-          action: 'درخواست تایید شد',
-          timestamp: '2 ساعت پیش',
-          status: 'approved'
-        },
-        {
-          id: 2,
-          company_name: 'خدمات اضطراری پارس',
-          action: 'در انتظار بررسی',
-          timestamp: '4 ساعت پیش',
-          status: 'pending'
-        },
-        {
-          id: 3,
-          company_name: 'تعمیرگاه ماشین‌آلات',
-          action: 'درخواست رد شد',
-          timestamp: '6 ساعت پیش',
-          status: 'rejected'
-        }
+      // Get real data from API
+      const [statsResponse, activitiesResponse, applicationsResponse] = await Promise.all([
+        apiFetch('/api/business-expert/dashboard'),
+        apiFetch('/api/business-expert/activities'),
+        apiFetch('/api/business-expert/applications?status=pending&per_page=5')
       ]);
+      
+      setStats(statsResponse);
+      setRecentActivities(activitiesResponse.activities || []);
+      setPendingApplications(applicationsResponse.items || []);
     } catch (err) {
       console.error('Error loading dashboard:', err);
+      // Set default empty data on error
+      setStats({
+        pending_reviews: 0,
+        approved_today: 0,
+        monthly_revenue: '0',
+        total_companies: 0,
+        review_efficiency: 0,
+        customer_satisfaction: 0
+      });
+      setRecentActivities([]);
+      setPendingApplications([]);
     } finally {
       setLoading(false);
     }
@@ -116,6 +102,29 @@ export default function BusinessExpertDashboard() {
         return <Badge variant="destructive">رد شده</Badge>;
       default:
         return <Badge variant="secondary">در انتظار</Badge>;
+    }
+  };
+
+  const handleQuickApprove = async (appId: number) => {
+    try {
+      await apiFetch(`/api/business-expert/applications/${appId}/approve`, {
+        method: 'POST',
+        body: JSON.stringify({ notes: 'تایید سریع توسط کارشناس' })
+      });
+      
+      toast({
+        title: "درخواست تایید شد",
+        description: "درخواست با موفقیت تایید شد",
+      });
+      
+      // Reload dashboard data
+      loadDashboardData();
+    } catch (error) {
+      toast({
+        title: "خطا در تایید",
+        description: "لطفاً دوباره تلاش کنید",
+        variant: "destructive",
+      });
     }
   };
 
@@ -145,7 +154,7 @@ export default function BusinessExpertDashboard() {
           </div>
           <div className="mt-4 sm:mt-0">
             <Button 
-              onClick={() => navigate('/business-expert/review')}
+              onClick={() => navigate('/business-expert/applications')}
               className="w-full sm:w-auto"
             >
               <FileCheck className="mr-2 h-4 w-4" />
@@ -261,70 +270,58 @@ export default function BusinessExpertDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {/* Mock pending applications */}
-              <div className="border rounded-lg p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h4 className="font-semibold">شرکت تعمیرات سنگین آریا</h4>
-                    <p className="text-sm text-muted-foreground">نماینده: علی احمدی</p>
-                  </div>
-                  <Badge variant="secondary">جدید</Badge>
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-sm mb-3">
-                  <div>
-                    <span className="font-medium">تلفن:</span>
-                    <p className="text-muted-foreground">09123456789</p>
-                  </div>
-                  <div>
-                    <span className="font-medium">حوزه خدمات:</span>
-                    <p className="text-muted-foreground">تعمیرات موتور</p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={() => navigate('/business-expert/review/1')}>
-                    بررسی جزئیات
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    تایید سریع
-                  </Button>
-                </div>
-              </div>
-
-              <div className="border rounded-lg p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h4 className="font-semibold">خدمات اضطراری پارس</h4>
-                    <p className="text-sm text-muted-foreground">نماینده: مریم کریمی</p>
-                  </div>
-                  <Badge variant="secondary">جدید</Badge>
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-sm mb-3">
-                  <div>
-                    <span className="font-medium">تلفن:</span>
-                    <p className="text-muted-foreground">09987654321</p>
-                  </div>
-                  <div>
-                    <span className="font-medium">حوزه خدمات:</span>
-                    <p className="text-muted-foreground">خدمات اضطراری</p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={() => navigate('/business-expert/review/2')}>
-                    بررسی جزئیات
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    تایید سریع
-                  </Button>
-                </div>
-              </div>
-
-              <div className="text-center pt-4">
-                <Button variant="outline" onClick={() => navigate('/business-expert/review')}>
-                  مشاهده همه درخواست‌ها ({pendingApplications.length || 5})
+            {pendingApplications.length === 0 ? (
+              <div className="text-center py-8">
+                <FileCheck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">هیچ درخواست جدیدی وجود ندارد</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  در حال حاضر همه درخواست‌ها بررسی شده‌اند
+                </p>
+                <Button variant="outline" onClick={() => navigate('/business-expert/applications')}>
+                  مشاهده همه درخواست‌ها
                 </Button>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                {pendingApplications.slice(0, 3).map((app) => (
+                  <div key={app.id} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h4 className="font-semibold">{app.company_name}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          نماینده: {app.representative_first_name} {app.representative_last_name}
+                        </p>
+                      </div>
+                      <Badge variant="secondary">جدید</Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm mb-3">
+                      <div>
+                        <span className="font-medium">تلفن:</span>
+                        <p className="text-muted-foreground">{app.phone_mobile}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium">حوزه خدمات:</span>
+                        <p className="text-muted-foreground">{app.service_domain}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => navigate(`/business-expert/review/${app.id}`)}>
+                        بررسی جزئیات
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleQuickApprove(app.id)}>
+                        تایید سریع
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+
+                <div className="text-center pt-4">
+                  <Button variant="outline" onClick={() => navigate('/business-expert/applications')}>
+                    مشاهده همه درخواست‌ها ({pendingApplications.length})
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -388,9 +385,9 @@ export default function BusinessExpertDashboard() {
                   variant="outline" 
                   size="sm" 
                   className="w-full"
-                  onClick={() => navigate('/business-expert/activities')}
+                  onClick={() => navigate('/business-expert/applications')}
                 >
-                  مشاهده همه فعالیت‌ها
+                  مشاهده همه درخواست‌ها
                 </Button>
               </div>
             </CardContent>
@@ -406,11 +403,11 @@ export default function BusinessExpertDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <Button 
                 variant="outline" 
                 className="h-auto p-4 flex flex-col items-center space-y-2"
-                onClick={() => navigate('/business-expert/review')}
+                onClick={() => navigate('/business-expert/applications')}
               >
                 <FileCheck className="h-6 w-6" />
                 <span>بررسی درخواست‌ها</span>
@@ -418,26 +415,18 @@ export default function BusinessExpertDashboard() {
               <Button 
                 variant="outline" 
                 className="h-auto p-4 flex flex-col items-center space-y-2"
-                onClick={() => navigate('/business-expert/approval')}
+                onClick={() => navigate('/business-expert/providers')}
               >
-                <CheckCircle className="h-6 w-6" />
-                <span>تایید شرکت‌ها</span>
+                <Building className="h-6 w-6" />
+                <span>مدیریت ارائه‌دهندگان</span>
               </Button>
               <Button 
                 variant="outline" 
                 className="h-auto p-4 flex flex-col items-center space-y-2"
-                onClick={() => navigate('/business-expert/financial')}
+                onClick={() => navigate('/business-expert/providers/add')}
               >
-                <DollarSign className="h-6 w-6" />
-                <span>گزارش‌های مالی</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                className="h-auto p-4 flex flex-col items-center space-y-2"
-                onClick={() => navigate('/business-expert/communication')}
-              >
-                <Activity className="h-6 w-6" />
-                <span>ارتباط با مشتریان</span>
+                <Plus className="h-6 w-6" />
+                <span>اضافه کردن ارائه‌دهنده</span>
               </Button>
             </div>
           </CardContent>

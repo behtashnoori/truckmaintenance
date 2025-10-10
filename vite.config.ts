@@ -8,14 +8,22 @@ import { loadEnv } from "vite";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "VITE_");
   const parsedPort = Number(env.VITE_PORT || "");
-  const port = Number.isFinite(parsedPort) && parsedPort > 0 ? parsedPort : 5173;
-  const host = env.VITE_HOST || "127.0.0.1";
+  const port = Number.isFinite(parsedPort) && parsedPort > 0 ? parsedPort : 5174;
+  const host = env.VITE_HOST || "0.0.0.0";
 
   return {
     server: {
       host,
       port,
       strictPort: false,
+      proxy: {
+        '/api': {
+          target: 'http://127.0.0.1:5000',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/api/, '/api'),
+        },
+      },
     },
     plugins: [
       react(),

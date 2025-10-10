@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { SessionStatus } from '@/components/SessionStatus'
 import {
   LayoutDashboard,
   FileText,
@@ -12,7 +13,9 @@ import {
   Settings,
   Home,
   LogOut,
-  Tag
+  Tag,
+  MapPin,
+  Truck
 } from 'lucide-react'
 
 interface AdminSidebarProps {
@@ -54,6 +57,20 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onItemClick }) => {
       href: '/admin/categories',
       badge: null,
       description: 'مدیریت دسته‌بندی‌های خدمات'
+    },
+    {
+      title: 'مکان‌ها',
+      icon: MapPin,
+      href: '/admin/locations',
+      badge: null,
+      description: 'مدیریت استان، شهرستان و شهرها'
+    },
+    {
+      title: 'انواع وسایل',
+      icon: Truck,
+      href: '/admin/vehicle-types',
+      badge: null,
+      description: 'مدیریت انواع وسایل نقلیه'
     },
     {
       title: 'شرکت‌ها',
@@ -169,6 +186,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onItemClick }) => {
               admin@example.com
             </p>
           </div>
+        </div>
+        
+        {/* Session Status */}
+        <div className="mt-3">
+          <SessionStatus variant="badge" showTime={true} showIcon={true} />
         </div>
       </div>
     </div>

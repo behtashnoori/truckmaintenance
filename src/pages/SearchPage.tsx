@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { CategorySelector } from '@/components/CategorySelector';
 import { Footer } from '@/components/Footer';
+import { Header } from '@/components/Header';
 import { useLocation } from '@/contexts/LocationContext';
 import { ServiceCategory } from '@/lib/api';
 import { Truck } from 'lucide-react';
@@ -13,22 +14,15 @@ export const SearchPage: React.FC = () => {
   const navigate = useNavigate();
 
   const handleDirectNavigation = (category: ServiceCategory) => {
-    if (category !== 'oil' && (!lat || !lon)) {
-      navigate('/location-error');
-      return;
-    }
-
-    const slugMap: Record<ServiceCategory, string> = {
-      roadside: 'roadside',
-      tire: 'tyre-wheel',
-      recovery: 'recovery-accident',
-      oil: 'oil-filter'
-    };
-    navigate(`/c/${slugMap[category]}`);
+    // For now, allow all categories without location check
+    // Navigate directly using the category name as slug
+    navigate(`/c/${category}`);
   };
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Header title="خدمات" />
+      
       {/* Hero Section */}
       <div className="gradient-hero text-white p-6 text-center">
         <div className="max-w-md mx-auto">
@@ -65,6 +59,7 @@ export const SearchPage: React.FC = () => {
             ثبت‌نام ارائه‌دهنده
           </Button>
         </div>
+        
       </div>
 
       <Footer />

@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PageNavigation } from '@/components/PageNavigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
+import { apiFetch } from '@/utils/api';
 import { 
   Plus, 
   Edit, 
@@ -47,13 +49,8 @@ export const CategoryManagement: React.FC = () => {
   const fetchCategories = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/admin/categories');
-      if (response.ok) {
-        const data = await response.json();
-        setCategories(data.categories || []);
-      } else {
-        throw new Error('خطا در دریافت دسته‌بندی‌ها');
-      }
+      const data = await apiFetch<any>('/api/admin/categories');
+      setCategories(data.data || []);
     } catch (error) {
       console.error('Error fetching categories:', error);
       toast({
@@ -85,40 +82,30 @@ export const CategoryManagement: React.FC = () => {
       
       const method = editingCategory ? 'PUT' : 'POST';
       
-      const response = await fetch(url, {
+      const data = await apiFetch<any>(url, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(formData),
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        
-        if (editingCategory) {
-          setCategories(prev =>
-            prev.map(cat => cat.id === editingCategory.id ? data.category : cat)
-          );
-          toast({
-            title: 'دسته‌بندی به‌روزرسانی شد',
-            description: 'دسته‌بندی با موفقیت به‌روزرسانی شد.',
-          });
-        } else {
-          setCategories(prev => [...prev, data.category]);
-          toast({
-            title: 'دسته‌بندی اضافه شد',
-            description: 'دسته‌بندی جدید با موفقیت اضافه شد.',
-          });
-        }
-        
-        setIsDialogOpen(false);
-        setEditingCategory(null);
-        setFormData({ name: '' });
+      
+      if (editingCategory) {
+        setCategories(prev =>
+          prev.map(cat => cat.id === editingCategory.id ? data.data : cat)
+        );
+        toast({
+          title: 'دسته‌بندی به‌روزرسانی شد',
+          description: 'دسته‌بندی با موفقیت به‌روزرسانی شد.',
+        });
       } else {
-        const error = await response.json();
-        throw new Error(error.message || 'خطا در ذخیره دسته‌بندی');
+        setCategories(prev => [...prev, data.data]);
+        toast({
+          title: 'دسته‌بندی اضافه شد',
+          description: 'دسته‌بندی جدید با موفقیت اضافه شد.',
+        });
       }
+      
+      setIsDialogOpen(false);
+      setEditingCategory(null);
+      setFormData({ name: '' });
     } catch (error) {
       console.error('Error saving category:', error);
       toast({
@@ -141,20 +128,15 @@ export const CategoryManagement: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`/api/admin/categories/${categoryId}`, {
+      await apiFetch(`/api/admin/categories/${categoryId}`, {
         method: 'DELETE',
       });
 
-      if (response.ok) {
-        setCategories(prev => prev.filter(cat => cat.id !== categoryId));
-        toast({
-          title: 'دسته‌بندی حذف شد',
-          description: 'دسته‌بندی با موفقیت حذف شد.',
-        });
-      } else {
-        const error = await response.json();
-        throw new Error(error.message || 'خطا در حذف دسته‌بندی');
-      }
+      setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+      toast({
+        title: 'دسته‌بندی حذف شد',
+        description: 'دسته‌بندی با موفقیت حذف شد.',
+      });
     } catch (error) {
       console.error('Error deleting category:', error);
       toast({
@@ -386,6 +368,9 @@ export const CategoryManagement: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+        
+        {/* Navigation */}
+        <PageNavigation position="bottom" variant="floating" homePath="/admin/dashboard" />
       </div>
     </div>
   );

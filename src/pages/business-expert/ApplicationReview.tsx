@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { PageNavigation } from '@/components/PageNavigation';
 import BusinessExpertLayout from '@/components/business-expert/BusinessExpertLayout';
 import { 
   CheckCircle, 
@@ -16,9 +17,11 @@ import {
   Clock,
   ArrowLeft,
   MessageCircle,
-  FileText
+  FileText,
+  FileCheck
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { apiFetch } from '@/utils/api';
 
 interface ApplicationData {
   id: number;
@@ -45,35 +48,24 @@ export default function ApplicationReview() {
   const { toast } = useToast();
   
   const [application, setApplication] = useState<ApplicationData | null>(null);
+  const [applications, setApplications] = useState<ApplicationData[]>([]);
   const [loading, setLoading] = useState(true);
   const [reviewNotes, setReviewNotes] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    loadApplication();
+    if (id) {
+      loadApplication();
+    } else {
+      loadApplications();
+    }
   }, [id]);
 
   const loadApplication = async () => {
     try {
-      // TODO: Replace with actual API call
-      // const response = await apiFetch(`/business-expert/applications/${id}`);
-      
-      // Mock data
-      setApplication({
-        id: parseInt(id || '1'),
-        company_name: 'شرکت تعمیرات سنگین آریا',
-        representative_first_name: 'علی',
-        representative_last_name: 'احمدی',
-        address: 'تهران، خیابان آزادی، پلاک 123',
-        phone_mobile: '09123456789',
-        phone_landline: '02112345678',
-        service_domain: 'تعمیرات موتور',
-        latitude: 35.6892,
-        longitude: 51.3890,
-        status: 'pending',
-        created_at: '2024-01-15T10:30:00Z',
-        is_approved: false
-      });
+      // Get real data from API
+      const response = await apiFetch(`/api/business-expert/applications/${id}`);
+      setApplication(response);
     } catch (error) {
       toast({
         title: "خطا در بارگذاری",
@@ -85,21 +77,36 @@ export default function ApplicationReview() {
     }
   };
 
+  const loadApplications = async () => {
+    try {
+      // Get all pending applications
+      const response = await apiFetch('/api/business-expert/applications?status=pending');
+      setApplications(response.items || []);
+    } catch (error) {
+      toast({
+        title: "خطا در بارگذاری",
+        description: "نتوانستیم لیست درخواست‌ها را بارگذاری کنیم",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleApprove = async () => {
     setIsProcessing(true);
     try {
-      // TODO: Replace with actual API call
-      // await apiFetch(`/business-expert/applications/${id}/approve`, {
-      //   method: 'POST',
-      //   body: JSON.stringify({ notes: reviewNotes })
-      // });
+      await apiFetch(`/api/business-expert/applications/${id}/approve`, {
+        method: 'POST',
+        body: JSON.stringify({ notes: reviewNotes })
+      });
       
       toast({
         title: "درخواست تایید شد",
         description: "درخواست با موفقیت تایید و شرکت در سیستم فعال شد",
       });
       
-      navigate('/business-expert/dashboard');
+      navigate('/business-expert/applications');
     } catch (error) {
       toast({
         title: "خطا در تایید",
@@ -123,18 +130,17 @@ export default function ApplicationReview() {
 
     setIsProcessing(true);
     try {
-      // TODO: Replace with actual API call
-      // await apiFetch(`/business-expert/applications/${id}/reject`, {
-      //   method: 'POST',
-      //   body: JSON.stringify({ notes: reviewNotes })
-      // });
+      await apiFetch(`/api/business-expert/applications/${id}/reject`, {
+        method: 'POST',
+        body: JSON.stringify({ notes: reviewNotes })
+      });
       
       toast({
         title: "درخواست رد شد",
         description: "درخواست رد شد و به متقاضی اطلاع داده خواهد شد",
       });
       
-      navigate('/business-expert/dashboard');
+      navigate('/business-expert/applications');
     } catch (error) {
       toast({
         title: "خطا در رد درخواست",
@@ -143,6 +149,29 @@ export default function ApplicationReview() {
       });
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleQuickApprove = async (appId: number) => {
+    try {
+      await apiFetch(`/api/business-expert/applications/${appId}/approve`, {
+        method: 'POST',
+        body: JSON.stringify({ notes: 'تایید سریع توسط کارشناس' })
+      });
+      
+      toast({
+        title: "درخواست تایید شد",
+        description: "درخواست با موفقیت تایید شد",
+      });
+      
+      // Reload applications list
+      loadApplications();
+    } catch (error) {
+      toast({
+        title: "خطا در تایید",
+        description: "لطفاً دوباره تلاش کنید",
+        variant: "destructive",
+      });
     }
   };
 
@@ -159,13 +188,106 @@ export default function ApplicationReview() {
     );
   }
 
+  // Show applications list if no specific ID
+  if (!id) {
+    return (
+      <BusinessExpertLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                درخواست‌های در انتظار بررسی
+              </h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                بررسی و تایید درخواست‌های ثبت‌نام جدید
+              </p>
+            </div>
+            <Button onClick={() => navigate('/business-expert/dashboard')}>
+              بازگشت به داشبورد
+            </Button>
+          </div>
+
+          {applications.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-8">
+                <FileCheck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">هیچ درخواستی یافت نشد</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  در حال حاضر هیچ درخواست در انتظار بررسی وجود ندارد
+                </p>
+                <Button onClick={() => navigate('/business-expert/dashboard')}>
+                  بازگشت به داشبورد
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {applications.map((app) => (
+                <Card key={app.id}>
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle>{app.company_name}</CardTitle>
+                        <CardDescription>
+                          نماینده: {app.representative_first_name} {app.representative_last_name}
+                        </CardDescription>
+                      </div>
+                      <Badge variant="secondary">جدید</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                      <div>
+                        <span className="font-medium">تلفن:</span>
+                        <p className="text-muted-foreground">{app.phone_mobile}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium">حوزه خدمات:</span>
+                        <p className="text-muted-foreground">{app.service_domain}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium">آدرس:</span>
+                        <p className="text-muted-foreground">{app.address}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium">تاریخ ثبت:</span>
+                        <p className="text-muted-foreground">
+                          {new Date(app.created_at).toLocaleDateString('fa-IR')}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        onClick={() => navigate(`/business-expert/review/${app.id}`)}
+                      >
+                        بررسی جزئیات
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleQuickApprove(app.id)}
+                      >
+                        تایید سریع
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </BusinessExpertLayout>
+    );
+  }
+
   if (!application) {
     return (
       <BusinessExpertLayout>
         <div className="text-center py-8">
           <p className="text-gray-600 dark:text-gray-400">درخواست مورد نظر یافت نشد</p>
-          <Button onClick={() => navigate('/business-expert/dashboard')} className="mt-4">
-            بازگشت به داشبورد
+          <Button onClick={() => navigate('/business-expert/applications')} className="mt-4">
+            بازگشت به لیست درخواست‌ها
           </Button>
         </div>
       </BusinessExpertLayout>
@@ -181,7 +303,7 @@ export default function ApplicationReview() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate('/business-expert/dashboard')}
+              onClick={() => navigate('/business-expert/applications')}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               بازگشت
@@ -377,6 +499,9 @@ export default function ApplicationReview() {
                 </Button>
               </CardContent>
             </Card>
+            
+            {/* Navigation */}
+            <PageNavigation position="bottom" variant="floating" homePath="/business-expert/dashboard" />
           </div>
         </div>
       </div>

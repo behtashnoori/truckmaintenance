@@ -4,8 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { PageNavigation } from '@/components/PageNavigation';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, Download, FileSpreadsheet, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
+import { apiFetch } from '@/utils/api';
+import BusinessExpertLayout from '@/components/business-expert/BusinessExpertLayout';
+import { Upload, Download, FileSpreadsheet, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface UploadResult {
   success: boolean;
@@ -47,25 +50,38 @@ export const BulkUpload: React.FC = () => {
 
   const handleDownloadTemplate = async () => {
     try {
-      const response = await fetch('/api/business-expert/providers/template');
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'template_providers.xlsx';
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        
-        toast({
-          title: 'قالب دانلود شد',
-          description: 'فایل قالب با موفقیت دانلود شد.',
-        });
-      } else {
-        throw new Error('خطا در دانلود قالب');
+      // Get auth token
+      const token = localStorage.getItem('auth_token');
+      
+      // Use fetch directly to download file as blob
+      const response = await fetch('/api/business-expert/providers/template', {
+        method: 'GET',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to download template');
       }
+      
+      // Get blob from response
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'template_providers.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: 'قالب دانلود شد',
+        description: 'فایل قالب با موفقیت دانلود شد.',
+      });
     } catch (error) {
       console.error('Error downloading template:', error);
       toast({
@@ -86,64 +102,77 @@ export const BulkUpload: React.FC = () => {
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
+      
+      // Get auth token
+      const token = localStorage.getItem('auth_token');
 
+      // Use fetch directly for file upload with progress
       const response = await fetch('/api/business-expert/providers/bulk-upload', {
         method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
         body: formData,
       });
 
-      const result: UploadResult = await response.json();
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Upload failed');
+      }
 
+      const result = await response.json();
+      
+      // Handle both sync and async responses
       if (result.success) {
-        setUploadResult(result);
+        setUploadResult({
+          success: true,
+          message: result.message,
+          details: result.data?.results || result.data
+        });
+        
         toast({
           title: 'آپلود موفق',
           description: result.message,
         });
-        setSelectedFile(null);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
       } else {
-        setUploadResult(result);
-        toast({
-          title: 'خطا در آپلود',
-          description: result.message,
-          variant: 'destructive',
-        });
+        throw new Error(result.error || 'Upload failed');
+      }
+      
+      setSelectedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
     } catch (error) {
       console.error('Error uploading file:', error);
+      const errorMessage = error instanceof Error ? error.message : 'خطا در آپلود فایل';
       toast({
         title: 'خطا',
-        description: 'خطا در آپلود فایل. لطفاً دوباره تلاش کنید.',
+        description: errorMessage,
         variant: 'destructive',
+      });
+      setUploadResult({
+        success: false,
+        message: errorMessage
       });
     } finally {
       setIsUploading(false);
-      setUploadProgress(0);
+      setUploadProgress(100);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6">
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/business-expert/dashboard')}
-            className="mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            بازگشت به داشبورد
-          </Button>
-          
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            آپلود انبوه ارائه‌دهندگان
-          </h1>
-          <p className="text-muted-foreground">
-            فایل اکسل حاوی اطلاعات ارائه‌دهندگان را آپلود کنید
-          </p>
+    <BusinessExpertLayout>
+      <div className="space-y-6">
+        {/* Page Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              آپلود انبوه ارائه‌دهندگان
+            </h1>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              فایل اکسل حاوی اطلاعات ارائه‌دهندگان را آپلود کنید
+            </p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -300,6 +329,6 @@ export const BulkUpload: React.FC = () => {
           </Card>
         )}
       </div>
-    </div>
+    </BusinessExpertLayout>
   );
 };

@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PageNavigation } from '@/components/PageNavigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Plus, Upload, Edit, Trash2, MapPin, Phone, Building, ArrowLeft } from 'lucide-react';
+import { apiFetch } from '@/utils/api';
+import BusinessExpertLayout from '@/components/business-expert/BusinessExpertLayout';
+import { Search, Plus, Upload, Trash2, MapPin, Phone, Building } from 'lucide-react';
 
 interface Provider {
   id: number;
@@ -46,13 +49,8 @@ export const ManageProviders: React.FC = () => {
   const fetchProviders = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/business-expert/providers');
-      if (response.ok) {
-        const data = await response.json();
-        setProviders(data.providers || []);
-      } else {
-        throw new Error('خطا در دریافت اطلاعات');
-      }
+      const response = await apiFetch('/api/business-expert/providers');
+      setProviders(response.items || []);
     } catch (error) {
       console.error('Error fetching providers:', error);
       toast({
@@ -96,29 +94,22 @@ export const ManageProviders: React.FC = () => {
 
   const handleToggleStatus = async (providerId: number, currentStatus: boolean) => {
     try {
-      const response = await fetch(`/api/business-expert/providers/${providerId}/toggle-status`, {
+      await apiFetch(`/api/business-expert/providers/${providerId}/toggle-status`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ is_active: !currentStatus }),
       });
 
-      if (response.ok) {
-        setProviders(prev =>
-          prev.map(provider =>
-            provider.id === providerId
-              ? { ...provider, is_active: !currentStatus }
-              : provider
-          )
-        );
-        toast({
-          title: 'وضعیت تغییر کرد',
-          description: `ارائه‌دهنده ${!currentStatus ? 'فعال' : 'غیرفعال'} شد.`,
-        });
-      } else {
-        throw new Error('خطا در تغییر وضعیت');
-      }
+      setProviders(prev =>
+        prev.map(provider =>
+          provider.id === providerId
+            ? { ...provider, is_active: !currentStatus }
+            : provider
+        )
+      );
+      toast({
+        title: 'وضعیت تغییر کرد',
+        description: `ارائه‌دهنده ${!currentStatus ? 'فعال' : 'غیرفعال'} شد.`,
+      });
     } catch (error) {
       console.error('Error toggling status:', error);
       toast({
@@ -133,19 +124,15 @@ export const ManageProviders: React.FC = () => {
     if (!confirm('آیا از حذف این ارائه‌دهنده اطمینان دارید؟')) return;
 
     try {
-      const response = await fetch(`/api/business-expert/providers/${providerId}`, {
+      await apiFetch(`/api/business-expert/providers/${providerId}`, {
         method: 'DELETE',
       });
 
-      if (response.ok) {
-        setProviders(prev => prev.filter(provider => provider.id !== providerId));
-        toast({
-          title: 'ارائه‌دهنده حذف شد',
-          description: 'ارائه‌دهنده با موفقیت حذف شد.',
-        });
-      } else {
-        throw new Error('خطا در حذف ارائه‌دهنده');
-      }
+      setProviders(prev => prev.filter(provider => provider.id !== providerId));
+      toast({
+        title: 'ارائه‌دهنده حذف شد',
+        description: 'ارائه‌دهنده با موفقیت حذف شد.',
+      });
     } catch (error) {
       console.error('Error deleting provider:', error);
       toast({
@@ -166,59 +153,50 @@ export const ManageProviders: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>در حال بارگذاری...</p>
+      <BusinessExpertLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-400">در حال بارگذاری...</p>
+          </div>
         </div>
-      </div>
+      </BusinessExpertLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6">
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/business-expert/dashboard')}
-            className="mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            بازگشت به داشبورد
-          </Button>
-          
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">
-                مدیریت ارائه‌دهندگان
-              </h1>
-              <p className="text-muted-foreground">
-                مدیریت و ویرایش اطلاعات ارائه‌دهندگان خدمات
-              </p>
-            </div>
-            
-            <div className="flex gap-2">
-              <Button
-                onClick={() => navigate('/business-expert/providers/add')}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                اضافه کردن
-              </Button>
-              <Button
-                onClick={() => navigate('/business-expert/providers/bulk-upload')}
-                variant="outline"
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                آپلود انبوه
-              </Button>
-            </div>
+    <BusinessExpertLayout>
+      <div className="space-y-6">
+        {/* Page Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              مدیریت ارائه‌دهندگان
+            </h1>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              مدیریت و ویرایش اطلاعات ارائه‌دهندگان خدمات
+            </p>
+          </div>
+          <div className="mt-4 sm:mt-0 flex gap-2">
+            <Button
+              onClick={() => navigate('/business-expert/providers/add')}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              اضافه کردن
+            </Button>
+            <Button
+              onClick={() => navigate('/business-expert/providers/bulk-upload')}
+              variant="outline"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              آپلود انبوه
+            </Button>
           </div>
         </div>
 
         {/* فیلترها */}
-        <Card className="mb-6">
+        <Card>
           <CardHeader>
             <CardTitle>فیلترها و جستجو</CardTitle>
           </CardHeader>
@@ -342,20 +320,15 @@ export const ManageProviders: React.FC = () => {
                               size="sm"
                               variant="outline"
                               onClick={() => handleToggleStatus(provider.id, provider.is_active)}
+                              title={provider.is_active ? 'غیرفعال کردن' : 'فعال کردن'}
                             >
                               {provider.is_active ? 'غیرفعال' : 'فعال'}
                             </Button>
                             <Button
                               size="sm"
-                              variant="outline"
-                              onClick={() => navigate(`/business-expert/providers/${provider.id}/edit`)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
                               variant="destructive"
                               onClick={() => handleDeleteProvider(provider.id)}
+                              title="حذف ارائه‌دهنده"
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
@@ -370,6 +343,6 @@ export const ManageProviders: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </BusinessExpertLayout>
   );
 };

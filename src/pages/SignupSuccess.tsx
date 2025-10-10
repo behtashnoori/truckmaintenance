@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { PageNavigation } from '@/components/PageNavigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, Clock, Phone, Home } from 'lucide-react';
 
@@ -94,6 +95,9 @@ export const SignupSuccess: React.FC = () => {
               شما در صورت تأیید، یک پیامک حاوی اطلاعات ورود دریافت خواهید کرد
             </p>
           </div>
+          
+          {/* Navigation - show only back to home */}
+          <PageNavigation position="bottom" variant="floating" hideBack homePath="/" />
         </div>
       </div>
     </div>

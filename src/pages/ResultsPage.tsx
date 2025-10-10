@@ -119,7 +119,7 @@ export const ResultsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header title="نتایج جستجو" />
+      <Header title="نتایج جستجو" backTo="services" />
       
       {/* Filter Bar */}
       <div className="sticky top-16 z-40 bg-background/95 backdrop-blur-sm border-b p-4">
@@ -190,6 +190,7 @@ export const ResultsPage: React.FC = () => {
             {providers.map((provider) => (
               <ProviderCard key={provider.id} provider={provider} />
             ))}
+            
           </div>
         )}
       </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
+import { PageNavigation } from '@/components/PageNavigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -126,6 +127,9 @@ export const LocationError: React.FC = () => {
             برای یافتن مختصات خود می‌توانید از سرویس‌های نقشه آنلاین استفاده کنید
           </p>
         </div>
+        
+        {/* Navigation */}
+        <PageNavigation position="bottom" variant="floating" />
       </div>
     </div>
   );
