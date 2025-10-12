@@ -7,10 +7,11 @@ import { CategorySelector } from '@/components/CategorySelector';
 import { PageNavigation } from '@/components/PageNavigation';
 import { Header } from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ServiceCategory, submitProviderApplication } from '@/lib/api';
-import { Building, MapPin, Phone, User, FileText, CheckCircle, ArrowRight } from 'lucide-react';
+import { ServiceCategory, submitProviderApplication, ApiError, ApiWarning } from '@/lib/api';
+import { Building, MapPin, Phone, User, FileText, CheckCircle, ArrowRight, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MapPicker } from '@/components/MapPicker';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export const ProviderSignup: React.FC = () => {
   const navigate = useNavigate();
@@ -27,14 +28,14 @@ export const ProviderSignup: React.FC = () => {
   const [address, setAddress] = useState('');
   const [phoneMobile, setPhoneMobile] = useState('');
   const [phoneLandline, setPhoneLandline] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | undefined>(undefined);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   
   // Location
   const [latitude, setLatitude] = useState<number | undefined>(undefined);
   const [longitude, setLongitude] = useState<number | undefined>(undefined);
 
-  const handleCategorySelect = (category: ServiceCategory) => {
-    setSelectedCategory(prev => (prev === category ? undefined : category));
+  const handleCategorySelect = (categories: string[]) => {
+    setSelectedCategories(categories);
   };
 
   const validateStep1 = () => {
@@ -78,10 +79,10 @@ export const ProviderSignup: React.FC = () => {
       });
       return false;
     }
-    if (!selectedCategory) {
+    if (!selectedCategories || selectedCategories.length === 0) {
       toast({
         title: "خطا",
-        description: "لطفاً حوزه خدمات را انتخاب کنید",
+        description: "لطفاً حداقل یک حوزه خدمات را انتخاب کنید",
         variant: "destructive",
       });
       return false;
@@ -124,24 +125,112 @@ export const ProviderSignup: React.FC = () => {
 
     setIsLoading(true);
     try {
-      await submitProviderApplication({
+      const response = await submitProviderApplication({
         companyName,
         representativeFirstName: repFirstName,
         representativeLastName: repLastName,
         address,
         phoneMobile,
         phoneLandline: phoneLandline || undefined,
-        serviceDomain: selectedCategory!,
+        serviceCategories: selectedCategories,
         latitude: latitude!,
         longitude: longitude!,
       });
       
-      toast({
-        title: "درخواست ثبت شد",
-        description: "درخواست شما با موفقیت ثبت شد. کارشناس بازرگانی ظرف 24 ساعت آینده برای بررسی و تایید با شما تماس خواهد گرفت.",
-      });
-      
-      navigate('/signup/success');
+      if (response.success) {
+        // Show success message
+        toast({
+          title: "درخواست ثبت شد",
+          description: response.message || "درخواست شما با موفقیت ثبت شد. کارشناس بازرگانی ظرف 24 ساعت آینده برای بررسی و تایید با شما تماس خواهد گرفت.",
+        });
+
+        // Show fuzzy match warning if present
+        if (response.warning) {
+          toast({
+            title: response.warning.message,
+            description: response.warning.note,
+            variant: "default",
+          });
+        }
+        
+        navigate('/signup/success');
+      } else {
+        // Handle different error codes
+        const error = response.error;
+        
+        if (typeof error === 'object' && error !== null) {
+          const apiError = error as ApiError;
+          
+          switch (apiError.code) {
+            case 'DUPLICATE_PHONE':
+              toast({
+                title: "شماره تکراری",
+                description: (
+                  <div className="space-y-2">
+                    <p>{apiError.message}</p>
+                    <p className="text-sm">{apiError.action}</p>
+                    {apiError.support_contact && (
+                      <p className="text-sm font-semibold">شماره پشتیبانی: {apiError.support_contact}</p>
+                    )}
+                    {apiError.details && (
+                      <p className="text-xs text-muted-foreground">{apiError.details}</p>
+                    )}
+                  </div>
+                ),
+                variant: "destructive",
+                duration: 10000, // Show for 10 seconds
+              });
+              break;
+              
+            case 'RATE_LIMIT_EXCEEDED':
+              toast({
+                title: "تعداد درخواست بیش از حد",
+                description: `${apiError.message} (حداکثر ${apiError.max_attempts} درخواست در ساعت)`,
+                variant: "destructive",
+                duration: 8000,
+              });
+              break;
+              
+            case 'INVALID_PHONE':
+              toast({
+                title: "شماره موبایل نامعتبر",
+                description: apiError.message,
+                variant: "destructive",
+              });
+              break;
+              
+            case 'INVALID_COMPANY_NAME':
+              toast({
+                title: "نام شرکت نامعتبر",
+                description: apiError.message,
+                variant: "destructive",
+              });
+              break;
+              
+            case 'NETWORK_ERROR':
+              toast({
+                title: "خطای ارتباط",
+                description: apiError.message,
+                variant: "destructive",
+              });
+              break;
+              
+            default:
+              toast({
+                title: "خطا در ثبت درخواست",
+                description: apiError.message || "لطفاً دوباره تلاش کنید",
+                variant: "destructive",
+              });
+          }
+        } else {
+          // Handle string error
+          toast({
+            title: "خطا در ثبت درخواست",
+            description: typeof error === 'string' ? error : "لطفاً دوباره تلاش کنید",
+            variant: "destructive",
+          });
+        }
+      }
     } catch (error) {
       toast({
         title: "خطا در ثبت درخواست",
@@ -270,21 +359,38 @@ export const ProviderSignup: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label>حوزه خدمات *</Label>
+                  <Label>حوزه‌های خدمات *</Label>
                   <CategorySelector
-                    selectedCategory={selectedCategory}
-                    onCategorySelect={handleCategorySelect}
+                    multiSelect={true}
+                    selectedCategories={selectedCategories}
+                    onMultiSelect={handleCategorySelect}
                   />
                   <p className="text-sm text-muted-foreground mt-2">
-                    یکی از حوزه‌های خدمات را انتخاب کنید
+                    یک یا چند حوزه خدمات را انتخاب کنید (می‌توانید در چند حوزه فعالیت داشته باشید)
                   </p>
+                  {selectedCategories.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <span className="text-sm font-medium">حوزه‌های انتخاب شده:</span>
+                      {selectedCategories.map((cat) => (
+                        <span key={cat} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                          {cat}
+                          <button
+                            onClick={() => handleCategorySelect(selectedCategories.filter(c => c !== cat))}
+                            className="mr-2 hover:text-green-600"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <Button 
                   onClick={handleNextStep} 
                   className="w-full" 
                   size="lg"
-                  disabled={!companyName.trim() || !repFirstName.trim() || !repLastName.trim() || !address.trim() || !phoneMobile.trim() || !selectedCategory}
+                  disabled={!companyName.trim() || !repFirstName.trim() || !repLastName.trim() || !address.trim() || !phoneMobile.trim() || selectedCategories.length === 0}
                 >
                   ادامه به مرحله بعد
                   <ArrowRight className="mr-2 h-4 w-4" />
@@ -380,9 +486,15 @@ export const ProviderSignup: React.FC = () => {
                       <span className="font-medium">شماره تماس:</span>
                       <p className="text-muted-foreground">{phoneMobile}</p>
                     </div>
-                    <div>
-                      <span className="font-medium">حوزه خدمات:</span>
-                      <p className="text-muted-foreground">{selectedCategory}</p>
+                    <div className="md:col-span-2">
+                      <span className="font-medium">حوزه‌های خدمات:</span>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {selectedCategories.map((cat) => (
+                          <span key={cat} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                            {cat}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                     <div className="md:col-span-2">
                       <span className="font-medium">آدرس:</span>

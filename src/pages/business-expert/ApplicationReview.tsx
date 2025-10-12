@@ -18,7 +18,9 @@ import {
   ArrowLeft,
   MessageCircle,
   FileText,
-  FileCheck
+  FileCheck,
+  AlertTriangle,
+  Info
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiFetch } from '@/utils/api';
@@ -31,7 +33,7 @@ interface ApplicationData {
   address: string;
   phone_mobile: string;
   phone_landline?: string;
-  service_domain: string;
+  service_categories: string[];
   latitude: number;
   longitude: number;
   status: string;
@@ -40,6 +42,9 @@ interface ApplicationData {
   reviewed_at?: string;
   review_notes?: string;
   is_approved: boolean;
+  reapplication_count?: number;
+  fuzzy_match_warning?: boolean;
+  similar_company_names?: string;
 }
 
 export default function ApplicationReview() {
@@ -65,7 +70,7 @@ export default function ApplicationReview() {
     try {
       // Get real data from API
       const response = await apiFetch(`/api/business-expert/applications/${id}`);
-      setApplication(response);
+      setApplication(response.data || response);
     } catch (error) {
       toast({
         title: "خطا در بارگذاری",
@@ -81,7 +86,7 @@ export default function ApplicationReview() {
     try {
       // Get all pending applications
       const response = await apiFetch('/api/business-expert/applications?status=pending');
-      setApplications(response.items || []);
+      setApplications(response.data || response.items || []);
     } catch (error) {
       toast({
         title: "خطا در بارگذاری",
@@ -226,8 +231,22 @@ export default function ApplicationReview() {
                 <Card key={app.id}>
                   <CardHeader>
                     <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle>{app.company_name}</CardTitle>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <CardTitle>{app.company_name}</CardTitle>
+                          {app.fuzzy_match_warning && (
+                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300 dark:bg-yellow-900/20 dark:text-yellow-400">
+                              <AlertTriangle className="w-3 h-3 mr-1" />
+                              نام مشابه
+                            </Badge>
+                          )}
+                          {app.reapplication_count && app.reapplication_count > 1 && (
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-900/20 dark:text-blue-400">
+                              <Info className="w-3 h-3 mr-1" />
+                              درخواست {app.reapplication_count}م
+                            </Badge>
+                          )}
+                        </div>
                         <CardDescription>
                           نماینده: {app.representative_first_name} {app.representative_last_name}
                         </CardDescription>
@@ -236,14 +255,37 @@ export default function ApplicationReview() {
                     </div>
                   </CardHeader>
                   <CardContent>
+                    {(app.fuzzy_match_warning || app.similar_company_names) && (
+                      <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-yellow-800 dark:text-yellow-300">
+                              هشدار: نام شرکت مشابه
+                            </p>
+                            {app.similar_company_names && (
+                              <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">
+                                شباهت با: {app.similar_company_names}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     <div className="grid grid-cols-2 gap-4 text-sm mb-4">
                       <div>
                         <span className="font-medium">تلفن:</span>
                         <p className="text-muted-foreground">{app.phone_mobile}</p>
                       </div>
-                      <div>
-                        <span className="font-medium">حوزه خدمات:</span>
-                        <p className="text-muted-foreground">{app.service_domain}</p>
+                      <div className="col-span-2">
+                        <span className="font-medium">حوزه‌های خدمات:</span>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {app.service_categories && app.service_categories.map((cat) => (
+                            <span key={cat} className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                              {cat}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                       <div>
                         <span className="font-medium">آدرس:</span>
@@ -325,6 +367,48 @@ export default function ApplicationReview() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Application Details */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Warning Indicators */}
+            {(application.fuzzy_match_warning || application.reapplication_count && application.reapplication_count > 1) && (
+              <div className="space-y-3">
+                {application.fuzzy_match_warning && (
+                  <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-yellow-800 dark:text-yellow-300 mb-1">
+                          هشدار: نام شرکت مشابه شناسایی شد
+                        </h3>
+                        <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                          نام این شرکت شباهت زیادی به شرکت‌های دیگر در سیستم دارد. لطفاً دقت کنید که این درخواست تکراری نباشد.
+                        </p>
+                        {application.similar_company_names && (
+                          <p className="text-sm text-yellow-700 dark:text-yellow-400 mt-2">
+                            <span className="font-medium">شرکت‌های مشابه:</span> {application.similar_company_names}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {application.reapplication_count && application.reapplication_count > 1 && (
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">
+                          این {application.reapplication_count}مین بار درخواست این متقاضی است
+                        </h3>
+                        <p className="text-sm text-blue-700 dark:text-blue-400">
+                          این متقاضی قبلاً {application.reapplication_count - 1} بار درخواست ثبت‌نام کرده است.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
             {/* Company Information */}
             <Card>
               <CardHeader>
@@ -339,9 +423,15 @@ export default function ApplicationReview() {
                     <Label className="text-sm font-medium text-gray-600">نام شرکت</Label>
                     <p className="text-lg font-semibold">{application.company_name}</p>
                   </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">حوزه خدمات</Label>
-                    <p className="text-lg font-semibold">{application.service_domain}</p>
+                  <div className="md:col-span-2">
+                    <Label className="text-sm font-medium text-gray-600">حوزه‌های خدمات</Label>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {application.service_categories && application.service_categories.map((cat) => (
+                        <span key={cat} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 font-semibold">
+                          {cat}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">نام نماینده</Label>

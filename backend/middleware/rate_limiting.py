@@ -92,3 +92,66 @@ def login_rate_limit(max_attempts=5, window_minutes=15):
             return f(*args, **kwargs)
         return decorated
     return decorator
+
+def application_rate_limit(f):
+    """
+    Rate limiter specifically for provider application submissions
+    Limits to 3 attempts per hour per IP address
+    """
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        from flask import current_app
+        
+        # Check if rate limiting is enabled
+        if not current_app.config.get('RATE_LIMIT_ENABLED', True):
+            return f(*args, **kwargs)
+        
+        # Disable in testing mode
+        if current_app.config.get('TESTING'):
+            return f(*args, **kwargs)
+        
+        # Get configuration
+        max_attempts = current_app.config.get('RATE_LIMIT_APPLICATIONS_PER_HOUR', 3)
+        window_seconds = 3600  # 1 hour
+        
+        # Get client IP (check for proxy headers first)
+        client_ip = request.headers.get('X-Forwarded-For', request.headers.get('X-Real-IP', request.remote_addr))
+        if client_ip:
+            client_ip = client_ip.split(',')[0].strip()  # Take first IP if multiple
+        else:
+            client_ip = request.remote_addr
+        
+        current_time = time.time()
+        window_start = current_time - window_seconds
+        
+        # Use a separate storage key for application submissions
+        app_key = f"application_submit_{client_ip}"
+        client_attempts = rate_limit_storage[app_key]
+        
+        # Clean old attempts outside the window
+        while client_attempts and client_attempts[0] < window_start:
+            client_attempts.popleft()
+        
+        # Check if limit exceeded
+        if len(client_attempts) >= max_attempts:
+            # Calculate retry_after in minutes
+            oldest_attempt = client_attempts[0]
+            retry_after_seconds = int((oldest_attempt + window_seconds) - current_time)
+            retry_after_minutes = max(1, retry_after_seconds // 60)
+            
+            return jsonify({
+                'success': False,
+                'error': {
+                    'code': 'RATE_LIMIT_EXCEEDED',
+                    'message': f'تعداد درخواست‌های شما از حد مجاز گذشته است. لطفاً {retry_after_minutes} دقیقه دیگر تلاش کنید.',
+                    'retry_after': retry_after_minutes,
+                    'max_attempts': max_attempts
+                }
+            }), 429
+        
+        # Add current attempt
+        client_attempts.append(current_time)
+        
+        return f(*args, **kwargs)
+    
+    return decorated

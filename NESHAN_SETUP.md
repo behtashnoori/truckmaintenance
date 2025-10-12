@@ -137,7 +137,76 @@ Headers:
 - از HTTPS استفاده کنید (برای دسترسی به geolocation)
 - پاپ‌آپ بلاکر را غیرفعال کنید
 
+## Deep Links برای اپلیکیشن موبایل
+
+### پشتیبانی از اپلیکیشن نشان در موبایل
+
+سیستم به صورت خودکار نوع دستگاه را تشخیص داده و رفتار مناسب را انجام می‌دهد:
+
+#### Android
+- **Deep Link**: `nshn://routes?type=car&origin=LAT,LON&destination=LAT,LON`
+- اگر اپلیکیشن نشان نصب باشد، مستقیماً باز می‌شود
+- اگر نصب نباشد، پس از 2 ثانیه به وب نشان هدایت می‌شود
+
+#### iOS  
+- **Deep Link**: `neshan://routes?type=car&origin=LAT,LON&destination=LAT,LON`
+- اگر اپلیکیشن نشان نصب باشد، مستقیماً باز می‌شود
+- اگر نصب نباشد، پس از 2 ثانیه به وب نشان هدایت می‌شود
+
+#### Desktop/Laptop
+- همیشه وب نشان در تب جدید باز می‌شود
+- URL: `https://neshan.org/maps/routes?type=car&origin=LAT,LON&destination=LAT,LON`
+
+### تست در محیط توسعه
+
+#### روش 1: Chrome DevTools Device Mode
+1. در Chrome، `F12` را بزنید تا DevTools باز شود
+2. دکمه Device Toggle را فعال کنید (Ctrl+Shift+M)
+3. یک دستگاه موبایل (مثل iPhone یا Galaxy S20) را انتخاب کنید
+4. صفحه را refresh کنید
+5. روی دکمه مسیریابی کلیک کنید
+
+#### روش 2: تست در دستگاه واقعی
+1. سرور را روی شبکه محلی اجرا کنید
+2. از IP سیستم (مثل `192.168.1.100:5173`) در موبایل استفاده کنید
+3. اگر اپلیکیشن نشان نصب باشد، باز می‌شود
+4. در غیر این صورت، وب نشان باز می‌شود
+
+#### روش 3: Override User Agent (برای تست سریع)
+در Console مرورگر:
+```javascript
+Object.defineProperty(navigator, 'userAgent', {
+  get: () => 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/91.0.4472.120 Mobile Safari/537.36'
+});
+```
+
+### نحوه استفاده در کد
+
+```typescript
+// تشخیص نوع دستگاه
+const isMobile = NavigationService.isMobileDevice();
+const isAndroid = NavigationService.isAndroid();
+const isIOS = NavigationService.isIOS();
+
+// باز کردن مسیریابی (به صورت خودکار نوع دستگاه را تشخیص می‌دهد)
+await NavigationService.openNeshan({
+  lat: 35.7219,
+  lon: 51.3347,
+  label: 'نام مقصد',
+  originLat: 35.6892,  // اختیاری
+  originLon: 51.3890
+});
+```
+
 ## توجه
 
 این پروژه **فقط** از سرویس نشان برای مسیریابی استفاده می‌کند. سایر سرویس‌های مسیریابی (Google Maps، Balad، Map.ir) حذف شده‌اند.
+
+### ویژگی‌های کلیدی
+- ✅ تشخیص خودکار نوع دستگاه (موبایل/دسکتاپ)
+- ✅ پشتیبانی از Deep Links برای اپلیکیشن نشان
+- ✅ فال‌بک خودکار به وب نشان
+- ✅ دریافت موقعیت لحظه‌ای کاربر
+- ✅ محاسبه مسیر واقعی از API نشان
+- ✅ نمایش مسافت و زمان دقیق
 

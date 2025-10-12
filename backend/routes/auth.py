@@ -149,6 +149,84 @@ def get_current_user():
         }), 500
 
 
+@bp.route("/validate-session", methods=["POST"])
+def validate_session():
+    """Validate current session and return session status"""
+    token = None
+    
+    if 'Authorization' in request.headers:
+        auth_header = request.headers['Authorization']
+        try:
+            token = auth_header.split(" ")[1]  # Bearer <token>
+        except IndexError:
+            return jsonify({
+                'success': False,
+                'error': 'فرمت توکن نامعتبر است',
+                'valid': False
+            }), 401
+    
+    if not token:
+        return jsonify({
+            'success': False,
+            'error': 'توکن وجود ندارد',
+            'valid': False
+        }), 401
+    
+    try:
+        # Decode and validate token
+        data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
+        user = UserService.get_user_by_id(data['user_id'])
+        
+        if not user or not user.is_active:
+            return jsonify({
+                'success': False,
+                'error': 'کاربر یافت نشد یا غیرفعال است',
+                'valid': False
+            }), 401
+        
+        # Calculate token expiration time
+        exp_timestamp = data.get('exp', 0)
+        current_timestamp = datetime.datetime.now(datetime.timezone.utc).timestamp()
+        time_until_expiry = exp_timestamp - current_timestamp
+        
+        return jsonify({
+            "success": True,
+            "valid": True,
+            "message": "جلسه معتبر است",
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "full_name": user.full_name,
+                "role": user.role
+            },
+            "session": {
+                "expires_in": int(time_until_expiry),
+                "expires_at": exp_timestamp
+            }
+        }), 200
+        
+    except jwt.ExpiredSignatureError:
+        return jsonify({
+            'success': False,
+            'error': 'توکن منقضی شده است',
+            'valid': False
+        }), 401
+    except jwt.InvalidTokenError:
+        return jsonify({
+            'success': False,
+            'error': 'توکن نامعتبر است',
+            'valid': False
+        }), 401
+    except Exception as e:
+        logger.error(f"Session validation error: {str(e)}", exc_info=True)
+        return jsonify({
+            "success": False,
+            "error": "خطای سرور",
+            "valid": False
+        }), 500
+
+
 @bp.route("/users", methods=["GET"])
 @token_required
 @admin_required

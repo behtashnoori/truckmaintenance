@@ -62,9 +62,9 @@ export default function BusinessExpertDashboard() {
         apiFetch('/api/business-expert/applications?status=pending&per_page=5')
       ]);
       
-      setStats(statsResponse);
+      setStats(statsResponse.data || statsResponse);
       setRecentActivities(activitiesResponse.activities || []);
-      setPendingApplications(applicationsResponse.items || []);
+      setPendingApplications(applicationsResponse.data || applicationsResponse.items || []);
     } catch (err) {
       console.error('Error loading dashboard:', err);
       // Set default empty data on error
@@ -299,9 +299,15 @@ export default function BusinessExpertDashboard() {
                         <span className="font-medium">تلفن:</span>
                         <p className="text-muted-foreground">{app.phone_mobile}</p>
                       </div>
-                      <div>
-                        <span className="font-medium">حوزه خدمات:</span>
-                        <p className="text-muted-foreground">{app.service_domain}</p>
+                      <div className="col-span-2">
+                        <span className="font-medium">حوزه‌های خدمات:</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {app.service_categories && app.service_categories.map((cat: string) => (
+                            <span key={cat} className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                              {cat}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </div>
                     <div className="flex gap-2">

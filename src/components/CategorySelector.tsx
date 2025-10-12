@@ -6,11 +6,12 @@ import { useToast } from '@/hooks/use-toast';
 
 interface CategorySelectorProps {
   selectedCategory?: ServiceCategory;
-  onCategorySelect: (category: ServiceCategory) => void;
+  onCategorySelect?: (category: ServiceCategory) => void;
   variant?: 'default' | 'compact';
   className?: string;
   multiSelect?: boolean;
-  selectedCategories?: ServiceCategory[];
+  selectedCategories?: string[];
+  onMultiSelect?: (categories: string[]) => void;
   directNavigation?: boolean;
   onDirectNavigate?: (category: ServiceCategory) => void;
 }
@@ -59,6 +60,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   className = '',
   multiSelect = false,
   selectedCategories = [],
+  onMultiSelect,
   directNavigation = false,
   onDirectNavigate,
 }) => {
@@ -82,6 +84,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
             description: `${cat.companies_count || 0} ارائه‌دهنده`,
             icon: Tag,
             disabled: false,
+            originalName: cat.name,
           }));
           setCategories(apiCategories);
         }
@@ -94,13 +97,19 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
     }
   };
 
-  const isSelected = (categoryId: ServiceCategory) => 
-    multiSelect ? selectedCategories.includes(categoryId) : selectedCategory === categoryId;
+  const isSelected = (categoryName: string) => 
+    multiSelect ? selectedCategories.includes(categoryName) : selectedCategory === categoryName;
 
-  const handleCategoryClick = (categoryId: ServiceCategory) => {
-    if (directNavigation && onDirectNavigate) {
+  const handleCategoryClick = (categoryName: string, categoryId: ServiceCategory) => {
+    if (multiSelect && onMultiSelect) {
+      // Toggle category in multi-select mode
+      const newSelection = selectedCategories.includes(categoryName)
+        ? selectedCategories.filter(c => c !== categoryName)
+        : [...selectedCategories, categoryName];
+      onMultiSelect(newSelection);
+    } else if (directNavigation && onDirectNavigate) {
       onDirectNavigate(categoryId);
-    } else {
+    } else if (onCategorySelect) {
       onCategorySelect(categoryId);
     }
   };
@@ -124,7 +133,8 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
       <div className={`flex gap-2 ${className}`}>
         {categories.map((category) => {
           const Icon = category.icon;
-          const categorySelected = isSelected(category.id);
+          const categoryName = (category as any).originalName || category.title;
+          const categorySelected = isSelected(categoryName);
           const providerCount = parseInt(category.description.split(' ')[0]) || 0;
           
         return (
@@ -132,7 +142,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
             key={category.id}
             variant={categorySelected ? 'default' : 'outline'}
             size="sm"
-            onClick={category.disabled ? undefined : () => handleCategoryNavigation(category.id, providerCount)}
+            onClick={category.disabled ? undefined : (multiSelect ? () => handleCategoryClick(categoryName, category.id) : () => handleCategoryNavigation(category.id, providerCount))}
             className="flex-1"
             disabled={category.disabled}
           >
@@ -149,7 +159,8 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
     <div className={`grid grid-cols-2 gap-3 ${className}`}>
       {categories.map((category) => {
         const Icon = category.icon;
-        const categorySelected = isSelected(category.id);
+        const categoryName = (category as any).originalName || category.title;
+        const categorySelected = isSelected(categoryName);
         const providerCount = parseInt(category.description.split(' ')[0]) || 0;
 
         return (
@@ -157,7 +168,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
             key={category.id}
             variant={categorySelected ? 'default' : 'outline'}
             className="h-auto p-4 flex flex-col items-center text-center"
-            onClick={category.disabled ? undefined : () => handleCategoryNavigation(category.id, providerCount)}
+            onClick={category.disabled ? undefined : (multiSelect ? () => handleCategoryClick(categoryName, category.id) : () => handleCategoryNavigation(category.id, providerCount))}
             disabled={category.disabled}
           >
             <Icon size={32} className="mb-2" />
@@ -165,6 +176,9 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
               <div className="font-semibold text-mobile-base">{category.title}</div>
               <div className="text-sm opacity-75 mt-1">{category.description}</div>
             </div>
+            {multiSelect && categorySelected && (
+              <div className="absolute top-2 right-2 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-xs">✓</div>
+            )}
           </Button>
         );
       })}

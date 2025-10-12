@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { api, Provider } from '@/lib/api';
 import { Phone, MapPin, LoaderCircle, Clock, Radius } from 'lucide-react';
 import { MapViewer } from '@/components/MapViewer';
-// import { NavigationModal } from '@/components/NavigationModal'; // مخفی شده
+import { NavigationModal } from '@/components/NavigationModal';
 
 
 export const ProviderDetail: React.FC = () => {
@@ -17,7 +17,7 @@ export const ProviderDetail: React.FC = () => {
   const [provider, setProvider] = useState<Provider | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // const [showNavigationModal, setShowNavigationModal] = useState(false); // مخفی شده
+  const [showNavigationModal, setShowNavigationModal] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -60,9 +60,9 @@ export const ProviderDetail: React.FC = () => {
     }
   };
 
-  // const handleNavigationClick = () => {
-  //   setShowNavigationModal(true);
-  // }; // مخفی شده
+  const handleNavigationClick = () => {
+    setShowNavigationModal(true);
+  };
 
   if (isLoading) {
     return (
@@ -173,15 +173,14 @@ export const ProviderDetail: React.FC = () => {
                   height={250}
                 />
                 
-                {/* Navigation Button - مخفی شده */}
-                {/* <Button 
+                <Button 
                   onClick={handleNavigationClick}
                   className="w-full mt-3"
                   size="lg"
                 >
-                  <Navigation className="mr-2 h-4 w-4" />
-                  مسیریابی
-                </Button> */}
+                  <MapPin className="mr-2 h-4 w-4" />
+                  مسیریابی با نشان
+                </Button>
               </div>
             ) : (
               <div className="bg-muted rounded-lg h-48 flex items-center justify-center">
@@ -196,8 +195,7 @@ export const ProviderDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Navigation Modal - مخفی شده */}
-      {/* {provider && (
+      {provider && provider.location && (
         <NavigationModal
           isOpen={showNavigationModal}
           onClose={() => setShowNavigationModal(false)}
@@ -207,7 +205,7 @@ export const ProviderDetail: React.FC = () => {
           }}
           providerName={provider.name}
         />
-      )} */}
+      )}
     </div>
   );
 };

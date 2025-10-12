@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست مسیریابی نشان</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #667eea;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .info-box {
+            background: #f0f4ff;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .info-box p {
+            margin: 5px 0;
+            line-height: 1.6;
+        }
+        
+        .device-info {
+            background: #e8f5e9;
+            border: 2px solid #4caf50;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .device-info h3 {
+            color: #4caf50;
+            margin-bottom: 10px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+        }
+        
+        .result {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .result.show {
+            display: block;
+        }
+        
+        code {
+            background: #f5f5f5;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗺️ تست مسیریابی نشان</h1>
+        
+        <div class="device-info">
+            <h3>📱 اطلاعات دستگاه</h3>
+            <p><strong>نوع دستگاه:</strong> <span id="deviceType">در حال بررسی...</span></p>
+            <p><strong>User Agent:</strong> <code id="userAgent"></code></p>
+        </div>
+        
+        <div class="info-box">
+            <h3>ℹ️ توضیحات تست</h3>
+            <p>این صفحه برای تست مسیریابی نشان است.</p>
+            <p><strong>مقصد تست:</strong> میدان آزادی تهران</p>
+            <p><strong>مختصات:</strong> 35.6997, 51.3380</p>
+        </div>
+        
+        <button class="btn" onclick="getLocation()">1️⃣ دریافت موقعیت فعلی</button>
+        <button class="btn btn-success" onclick="openNavigation()" id="navBtn" disabled>2️⃣ باز کردن مسیریابی نشان</button>
+        
+        <div id="result" class="result">
+            <h3>✅ نتیجه</h3>
+            <p id="resultText"></p>
+        </div>
+    </div>
+
+    <script>
+        const NESHAN_CONFIG = {
+            WEB_MAP_URL: 'https://neshan.org/maps'
+        };
+
+        // مختصات میدان آزادی تهران (مقصد تست)
+        const destination = {
+            lat: 35.6997,
+            lon: 51.3380,
+            name: 'میدان آزادی تهران'
+        };
+
+        let userLocation = null;
+
+        // نمایش اطلاعات دستگاه
+        document.getElementById('userAgent').textContent = navigator.userAgent;
+        
+        function isMobileDevice() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+        function isAndroid() {
+            return /Android/.test(navigator.userAgent);
+        }
+
+        function isIOS() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent);
+        }
+
+        // تشخیص نوع دستگاه
+        let deviceType = 'دسکتاپ/لپ‌تاپ 💻';
+        if (isMobileDevice()) {
+            if (isAndroid()) {
+                deviceType = 'موبایل اندروید 📱';
+            } else if (isIOS()) {
+                deviceType = 'موبایل آیفون 📱';
+            } else {
+                deviceType = 'موبایل (سایر) 📱';
+            }
+        }
+        document.getElementById('deviceType').textContent = deviceType;
+
+        // دریافت موقعیت کاربر
+        function getLocation() {
+            const resultDiv = document.getElementById('result');
+            const resultText = document.getElementById('resultText');
+            
+            if (!navigator.geolocation) {
+                resultDiv.className = 'result show';
+                resultText.innerHTML = '❌ مرورگر شما از geolocation پشتیبانی نمی‌کند';
+                return;
+            }
+
+            resultDiv.className = 'result show';
+            resultText.innerHTML = '⏳ در حال دریافت موقعیت مکانی...';
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    userLocation = {
+                        lat: position.coords.latitude,
+                        lon: position.coords.longitude
+                    };
+                    
+                    resultDiv.className = 'result show';
+                    resultText.innerHTML = `
+                        ✅ موقعیت شما:<br>
+                        <strong>عرض جغرافیایی:</strong> ${userLocation.lat.toFixed(6)}<br>
+                        <strong>طول جغرافیایی:</strong> ${userLocation.lon.toFixed(6)}
+                    `;
+                    
+                    document.getElementById('navBtn').disabled = false;
+                },
+                (error) => {
+                    resultDiv.className = 'result show';
+                    let errorMsg = 'خطای نامشخص';
+                    
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMsg = '❌ دسترسی به موقعیت مکانی رد شد. لطفاً در تنظیمات مرورگر اجازه دهید.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMsg = '❌ موقعیت مکانی در دسترس نیست.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMsg = '❌ زمان درخواست به پایان رسید.';
+                            break;
+                    }
+                    
+                    resultText.innerHTML = errorMsg;
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 300000
+                }
+            );
+        }
+
+        // باز کردن مسیریابی
+        function openNavigation() {
+            if (!userLocation) {
+                alert('ابتدا موقعیت خود را دریافت کنید');
+                return;
+            }
+
+            const resultDiv = document.getElementById('result');
+            const resultText = document.getElementById('resultText');
+
+            const routeParams = `type=car&origin=${userLocation.lat},${userLocation.lon}&destination=${destination.lat},${destination.lon}`;
+            
+            if (isMobileDevice()) {
+                if (isAndroid()) {
+                    // Android Deep Link
+                    const appUrl = `nshn://routes?${routeParams}`;
+                    resultText.innerHTML = `🚀 در حال باز کردن اپلیکیشن نشان...<br><small>اگر اپ نصب نباشد، وب نشان باز می‌شود</small>`;
+                    window.location.href = appUrl;
+                    
+                    setTimeout(() => {
+                        const webUrl = `${NESHAN_CONFIG.WEB_MAP_URL}/routes?${routeParams}`;
+                        window.open(webUrl, '_blank');
+                    }, 2000);
+                } else if (isIOS()) {
+                    // iOS Deep Link
+                    const appUrl = `neshan://routes?${routeParams}`;
+                    resultText.innerHTML = `🚀 در حال باز کردن اپلیکیشن نشان...<br><small>اگر اپ نصب نباشد، وب نشان باز می‌شود</small>`;
+                    window.location.href = appUrl;
+                    
+                    setTimeout(() => {
+                        const webUrl = `${NESHAN_CONFIG.WEB_MAP_URL}/routes?${routeParams}`;
+                        window.open(webUrl, '_blank');
+                    }, 2000);
+                } else {
+                    // سایر موبایل‌ها
+                    const webUrl = `${NESHAN_CONFIG.WEB_MAP_URL}/routes?${routeParams}`;
+                    resultText.innerHTML = `🌐 در حال باز کردن وب نشان...`;
+                    window.open(webUrl, '_blank');
+                }
+            } else {
+                // Desktop
+                const webUrl = `${NESHAN_CONFIG.WEB_MAP_URL}/routes?${routeParams}`;
+                resultText.innerHTML = `🌐 وب نشان در تب جدید باز شد`;
+                window.open(webUrl, '_blank');
+            }
+        }
+    </script>
+</body>
+</html>
+
+

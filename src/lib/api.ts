@@ -1,10 +1,28 @@
 // API Layer for Heavy Vehicle Service PWA
 import { apiFetch } from '../utils/api';
 
+interface ApiError {
+  code?: string;
+  message: string;
+  action?: string;
+  support_contact?: string;
+  details?: string;
+  retry_after?: number;
+  max_attempts?: number;
+}
+
+interface ApiWarning {
+  code?: string;
+  message: string;
+  note?: string;
+}
+
 interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
-  error?: string;
+  error?: string | ApiError;
+  warning?: ApiWarning;
+  message?: string;
 }
 
 interface Provider {
@@ -70,7 +88,7 @@ interface ProviderApplicationInput {
   address: string;
   phoneMobile: string;
   phoneLandline?: string;
-  serviceDomain: string; // comma-separated for now
+  serviceCategories: string[]; // Array of category names
   latitude?: number;
   longitude?: number;
 }
@@ -168,14 +186,46 @@ class ApiClient {
     });
   }
 
-  // Submit provider application
+  // Submit provider application with enhanced error handling
   async submitProviderApplication(
     data: ProviderApplicationInput
   ): Promise<ApiResponse<{ id: number; status: string }>> {
-    return this.request<{ id: number; status: string }>(`/provider-applications`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    try {
+      const response = await fetch(`/api/provider-applications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      // Handle different response statuses
+      if (response.ok) {
+        return {
+          success: true,
+          data: result.data,
+          message: result.message,
+          warning: result.warning, // Include fuzzy match warning
+        };
+      } else {
+        // Return structured error
+        return {
+          success: false,
+          error: result.error || result.message || 'خطا در ارسال درخواست',
+        };
+      }
+    } catch (error) {
+      console.error('API Error:', error);
+      return {
+        success: false,
+        error: {
+          code: 'NETWORK_ERROR',
+          message: 'خطا در ارتباط با سرور. لطفاً اتصال اینترنت خود را بررسی کنید.',
+        },
+      };
+    }
   }
 
   // Submit contact form
@@ -221,4 +271,7 @@ export type {
   ProviderRegistration,
   ProviderApplicationInput,
   ContactForm,
+  ApiError,
+  ApiWarning,
+  ApiResponse,
 };

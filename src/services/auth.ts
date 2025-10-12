@@ -299,7 +299,7 @@ class AuthService {
   }
 
   /**
-   * Validate current session
+   * Validate current session (client-side check)
    */
   async validateSession(): Promise<boolean> {
     if (!this.isAuthenticated()) {
@@ -314,6 +314,48 @@ class AuthService {
     // Update activity time on validation
     this.updateActivity();
     return true;
+  }
+
+  /**
+   * Validate session with server (server-side check)
+   */
+  async validateSessionWithServer(): Promise<boolean> {
+    if (!this.token) {
+      return false;
+    }
+
+    try {
+      const response = await fetch('/api/validate-session', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          this.clearAuth();
+          return false;
+        }
+        return false;
+      }
+
+      const data = await response.json();
+      
+      if (!data.valid) {
+        this.clearAuth();
+        return false;
+      }
+
+      // Update activity time on successful validation
+      this.updateActivity();
+      return true;
+
+    } catch (error) {
+      console.error('Session validation error:', error);
+      return false;
+    }
   }
 
   /**

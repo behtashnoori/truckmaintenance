@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست تشخیص موقعیت مکانی</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 5px solid;
+        }
+        .success { background: #d4edda; border-color: #28a745; color: #155724; }
+        .error { background: #f8d7da; border-color: #dc3545; color: #721c24; }
+        .warning { background: #fff3cd; border-color: #ffc107; color: #856404; }
+        .info { background: #d1ecf1; border-color: #17a2b8; color: #0c5460; }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        
+        .test-section {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 تست تشخیص موقعیت مکانی</h1>
+        <p>این صفحه برای تشخیص مشکل دسترسی به موقعیت مکانی طراحی شده است.</p>
+        
+        <div class="test-section">
+            <h3>1️⃣ بررسی پشتیبانی مرورگر</h3>
+            <div id="browserSupport"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>2️⃣ بررسی HTTPS</h3>
+            <div id="httpsCheck"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>3️⃣ تست دریافت موقعیت</h3>
+            <button onclick="testLocation()" id="testBtn">دریافت موقعیت مکانی</button>
+            <div id="locationResult"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>4️⃣ اطلاعات محیط</h3>
+            <div id="environmentInfo"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>5️⃣ لاگ‌های سیستم</h3>
+            <pre id="logs"></pre>
+            <button onclick="clearLogs()">پاک کردن لاگ‌ها</button>
+        </div>
+    </div>
+
+    <script>
+        let logs = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString('fa-IR');
+            logs.push(`[${timestamp}] ${message}`);
+            updateLogs();
+            console.log(message);
+        }
+        
+        function updateLogs() {
+            document.getElementById('logs').textContent = logs.join('\n');
+        }
+        
+        function clearLogs() {
+            logs = [];
+            updateLogs();
+        }
+        
+        // 1. بررسی پشتیبانی مرورگر
+        function checkBrowserSupport() {
+            const supportDiv = document.getElementById('browserSupport');
+            
+            if (navigator.geolocation) {
+                supportDiv.innerHTML = '<div class="status success">✅ مرورگر شما از Geolocation API پشتیبانی می‌کند</div>';
+                log('✅ Browser supports Geolocation API');
+            } else {
+                supportDiv.innerHTML = '<div class="status error">❌ مرورگر شما از Geolocation API پشتیبانی نمی‌کند</div>';
+                log('❌ Browser does NOT support Geolocation API');
+            }
+        }
+        
+        // 2. بررسی HTTPS
+        function checkHTTPS() {
+            const httpsDiv = document.getElementById('httpsCheck');
+            
+            if (location.protocol === 'https:') {
+                httpsDiv.innerHTML = '<div class="status success">✅ سایت روی HTTPS اجرا می‌شود</div>';
+                log('✅ Site is running on HTTPS');
+            } else if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+                httpsDiv.innerHTML = '<div class="status warning">⚠️ سایت روی localhost اجرا می‌شود (معمولاً مشکلی نیست)</div>';
+                log('⚠️ Site is running on localhost (usually OK)');
+            } else {
+                httpsDiv.innerHTML = '<div class="status error">❌ سایت روی HTTP اجرا می‌شود. برای دسترسی به موقعیت مکانی باید HTTPS باشد</div>';
+                log('❌ Site is running on HTTP - Geolocation requires HTTPS');
+            }
+        }
+        
+        // 3. تست دریافت موقعیت
+        function testLocation() {
+            const resultDiv = document.getElementById('locationResult');
+            const testBtn = document.getElementById('testBtn');
+            
+            testBtn.disabled = true;
+            testBtn.textContent = 'در حال دریافت...';
+            resultDiv.innerHTML = '<div class="status info">⏳ در حال درخواست دسترسی به موقعیت مکانی...</div>';
+            
+            log('🔄 Starting location request...');
+            
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude, accuracy } = position.coords;
+                    
+                    resultDiv.innerHTML = `
+                        <div class="status success">
+                            <strong>✅ موقعیت دریافت شد!</strong><br/>
+                            <strong>عرض جغرافیایی:</strong> ${latitude.toFixed(6)}<br/>
+                            <strong>طول جغرافیایی:</strong> ${longitude.toFixed(6)}<br/>
+                            <strong>دقت:</strong> ${Math.round(accuracy)} متر<br/>
+                            <strong>زمان:</strong> ${new Date(position.timestamp).toLocaleString('fa-IR')}
+                        </div>
+                    `;
+                    
+                    log(`✅ Location received: ${latitude}, ${longitude} (accuracy: ${accuracy}m)`);
+                    testBtn.disabled = false;
+                    testBtn.textContent = 'دریافت مجدد موقعیت';
+                },
+                (error) => {
+                    let errorMessage = '';
+                    let errorType = '';
+                    
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = 'دسترسی به موقعیت مکانی رد شد. لطفاً در تنظیمات مرورگر اجازه دهید.';
+                            errorType = 'PERMISSION_DENIED';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = 'موقعیت مکانی در دسترس نیست. ممکن است GPS خاموش باشد.';
+                            errorType = 'POSITION_UNAVAILABLE';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = 'زمان درخواست به پایان رسید. لطفاً دوباره تلاش کنید.';
+                            errorType = 'TIMEOUT';
+                            break;
+                        default:
+                            errorMessage = 'خطای نامشخص در دریافت موقعیت.';
+                            errorType = 'UNKNOWN_ERROR';
+                    }
+                    
+                    resultDiv.innerHTML = `
+                        <div class="status error">
+                            <strong>❌ خطا در دریافت موقعیت:</strong><br/>
+                            <strong>نوع خطا:</strong> ${errorType}<br/>
+                            <strong>پیام:</strong> ${errorMessage}<br/>
+                            <strong>کد خطا:</strong> ${error.code}
+                        </div>
+                    `;
+                    
+                    log(`❌ Location error: ${errorType} (${error.code}) - ${error.message}`);
+                    testBtn.disabled = false;
+                    testBtn.textContent = 'تلاش مجدد';
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 60000
+                }
+            );
+        }
+        
+        // 4. اطلاعات محیط
+        function showEnvironmentInfo() {
+            const envDiv = document.getElementById('environmentInfo');
+            
+            const info = {
+                'User Agent': navigator.userAgent,
+                'Platform': navigator.platform,
+                'Language': navigator.language,
+                'Cookies Enabled': navigator.cookieEnabled ? 'بله' : 'خیر',
+                'Online': navigator.onLine ? 'آنلاین' : 'آفلاین',
+                'Protocol': location.protocol,
+                'Host': location.host,
+                'URL': location.href
+            };
+            
+            let html = '<div class="status info"><strong>اطلاعات محیط:</strong><br/>';
+            for (const [key, value] of Object.entries(info)) {
+                html += `<strong>${key}:</strong> ${value}<br/>`;
+            }
+            html += '</div>';
+            
+            envDiv.innerHTML = html;
+            
+            log('📋 Environment info collected');
+        }
+        
+        // اجرای تست‌ها در بارگذاری صفحه
+        window.onload = function() {
+            log('🚀 Debug page loaded');
+            checkBrowserSupport();
+            checkHTTPS();
+            showEnvironmentInfo();
+        };
+    </script>
+</body>
+</html>
+
+
+

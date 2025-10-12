@@ -1,13 +1,21 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from datetime import datetime, timezone
 from pydantic import ValidationError
+from sqlalchemy.exc import IntegrityError
 from ..app import db
 from ..models.provider_application import ProviderApplication
 from ..models.company import Company, Category
-from ..middleware.security import token_required, business_expert_required, validate_input, sanitize_string, validate_phone
+from ..middleware.security import (
+    token_required, business_expert_required, validate_input, 
+    sanitize_string, validate_phone, sanitize_phone,
+    validate_company_name, check_suspicious_patterns
+)
+from ..middleware.rate_limiting import application_rate_limit
 from ..schemas.pagination import PaginationParams, PaginatedResponse
 from ..schemas.response import ApiResponse, ErrorResponse
+from ..utils.fuzzy_match import check_company_name_similarity
 import logging
+import hashlib
 
 logger = logging.getLogger(__name__)
 
@@ -15,33 +23,144 @@ bp = Blueprint("provider_applications", __name__)
 
 
 @bp.route("/provider-applications", methods=["POST"])
-@validate_input(required_fields=["companyName", "representativeFirstName", "representativeLastName", "address", "phoneMobile", "serviceDomain", "latitude", "longitude"],
-                allowed_fields=["companyName", "representativeFirstName", "representativeLastName", "address", "phoneMobile", "phoneLandline", "serviceDomain", "latitude", "longitude"])
+@application_rate_limit
+@validate_input(required_fields=["companyName", "representativeFirstName", "representativeLastName", "address", "phoneMobile", "serviceCategories", "latitude", "longitude"],
+                allowed_fields=["companyName", "representativeFirstName", "representativeLastName", "address", "phoneMobile", "phoneLandline", "serviceCategories", "latitude", "longitude"])
 def create_provider_application():
-    """Create a new provider application (public endpoint)"""
+    """Create a new provider application (public endpoint) with duplicate prevention"""
     try:
         data = request.get_json(silent=True)
         if not data:
             return jsonify({
                 "success": False,
-                "error": "داده‌های ورودی نامعتبر است"
+                "error": {
+                    "code": "INVALID_INPUT",
+                    "message": "داده‌های ورودی نامعتبر است"
+                }
             }), 400
+
+        # Get client IP for logging
+        client_ip = request.headers.get('X-Forwarded-For', request.headers.get('X-Real-IP', request.remote_addr))
+        if client_ip:
+            client_ip = client_ip.split(',')[0].strip()
 
         # Sanitize all string inputs
         company_name = sanitize_string(data["companyName"])
         rep_first_name = sanitize_string(data["representativeFirstName"])
         rep_last_name = sanitize_string(data["representativeLastName"])
         address = sanitize_string(data["address"])
-        phone_mobile = data["phoneMobile"].strip()
-        phone_landline = data.get("phoneLandline", "").strip() if data.get("phoneLandline") else None
-        service_domain = sanitize_string(data["serviceDomain"])
+        phone_mobile = sanitize_phone(data["phoneMobile"])
+        phone_landline = sanitize_phone(data.get("phoneLandline", "")) if data.get("phoneLandline") else None
+        
+        # Validate company name
+        if not validate_company_name(company_name):
+            logger.warning(f"Invalid company name attempt: ip={client_ip}")
+            return jsonify({
+                "success": False,
+                "error": {
+                    "code": "INVALID_COMPANY_NAME",
+                    "message": "نام شرکت نامعتبر است. لطفاً نام معتبر وارد کنید."
+                }
+            }), 400
+        
+        # Check for suspicious patterns
+        suspicious_warnings = check_suspicious_patterns(data)
+        if suspicious_warnings:
+            logger.warning(f"Suspicious patterns detected: {suspicious_warnings}, ip={client_ip}")
+        
+        # Validate and process service categories
+        service_categories = data.get("serviceCategories", [])
+        if not isinstance(service_categories, list):
+            return jsonify({
+                "success": False,
+                "error": {
+                    "code": "INVALID_CATEGORIES",
+                    "message": "serviceCategories باید یک آرایه باشد"
+                }
+            }), 400
+        
+        if not service_categories:
+            return jsonify({
+                "success": False,
+                "error": {
+                    "code": "NO_CATEGORIES",
+                    "message": "حداقل یک حوزه خدماتی باید انتخاب شود"
+                }
+            }), 400
+        
+        # Sanitize category names
+        service_categories = [sanitize_string(cat) for cat in service_categories if cat and cat.strip()]
+        
+        if not service_categories:
+            return jsonify({
+                "success": False,
+                "error": {
+                    "code": "NO_VALID_CATEGORIES",
+                    "message": "حداقل یک حوزه خدماتی معتبر باید انتخاب شود"
+                }
+            }), 400
         
         # Validate phone number
         if not validate_phone(phone_mobile):
             return jsonify({
                 "success": False,
-                "error": "فرمت شماره موبایل نامعتبر است"
+                "error": {
+                    "code": "INVALID_PHONE",
+                    "message": "فرمت شماره موبایل نامعتبر است. شماره موبایل باید 11 رقم و با 09 شروع شود."
+                }
             }), 400
+        
+        # ===== DUPLICATE PHONE NUMBER CHECK =====
+        if current_app.config.get('DUPLICATE_CHECK_ENABLED', True):
+            existing_app = ProviderApplication.query.filter_by(phone_mobile=phone_mobile).first()
+            
+            if existing_app:
+                # Log duplicate attempt
+                phone_hash = hashlib.sha256(phone_mobile.encode()).hexdigest()[:16]
+                logger.warning(
+                    f"Duplicate phone number attempt: phone_hash={phone_hash}, "
+                    f"existing_app_id={existing_app.id}, ip={client_ip}"
+                )
+                
+                # Return detailed error with support contact
+                support_phone = current_app.config.get('SUPPORT_PHONE', '021-12345678')
+                
+                return jsonify({
+                    "success": False,
+                    "error": {
+                        "code": "DUPLICATE_PHONE",
+                        "message": "این شماره موبایل قبلاً در سیستم ثبت شده است.",
+                        "action": "لطفاً با شماره دیگری ثبت‌نام کنید یا با پشتیبانی تماس بگیرید.",
+                        "support_contact": support_phone,
+                        "details": "اگر قبلاً ثبت‌نام کرده‌اید، لطفاً منتظر تماس کارشناس بازرگانی باشید."
+                    }
+                }), 409  # HTTP 409 Conflict
+        
+        # ===== FUZZY MATCHING FOR COMPANY NAME =====
+        fuzzy_match_warning = False
+        similar_companies = []
+        
+        if current_app.config.get('DUPLICATE_CHECK_ENABLED', True):
+            # Get existing company names from applications and companies
+            existing_app_names = [app.company_name for app in ProviderApplication.query.all()]
+            existing_company_names = [comp.name for comp in Company.query.all()]
+            all_existing_names = list(set(existing_app_names + existing_company_names))
+            
+            # Check for similar names
+            threshold = current_app.config.get('FUZZY_MATCH_THRESHOLD', 0.8)
+            similarity_result = check_company_name_similarity(company_name, all_existing_names, threshold)
+            
+            if similarity_result['has_similar']:
+                fuzzy_match_warning = True
+                similar_companies = similarity_result['similar_names'][:3]  # Top 3 similar names
+                
+                # Log fuzzy match
+                logger.info(
+                    f"Fuzzy match detected: new_name='{company_name}', "
+                    f"similar_to={similar_companies}, "
+                    f"highest_similarity={similarity_result['highest_similarity']:.2f}, "
+                    f"ip={client_ip}"
+                )
         
         # Validate coordinates
         try:
@@ -50,14 +169,21 @@ def create_provider_application():
             if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
                 return jsonify({
                     "success": False,
-                    "error": "مختصات جغرافیایی نامعتبر است"
+                    "error": {
+                        "code": "INVALID_COORDINATES",
+                        "message": "مختصات جغرافیایی نامعتبر است"
+                    }
                 }), 400
         except (ValueError, TypeError):
             return jsonify({
                 "success": False,
-                "error": "مختصات جغرافیایی باید عدد باشد"
+                "error": {
+                    "code": "INVALID_COORDINATES",
+                    "message": "مختصات جغرافیایی باید عدد باشد"
+                }
             }), 400
 
+        # Create new application
         new_app = ProviderApplication(
             company_name=company_name,
             representative_first_name=rep_first_name,
@@ -65,29 +191,87 @@ def create_provider_application():
             address=address,
             phone_mobile=phone_mobile,
             phone_landline=phone_landline,
-            service_domain=service_domain,
             latitude=latitude,
             longitude=longitude,
-            created_at=datetime.now(timezone.utc)
+            created_at=datetime.now(timezone.utc),
+            last_submitted_at=datetime.now(timezone.utc),
+            reapplication_count=1,
+            fuzzy_match_warning=fuzzy_match_warning,
+            similar_company_names=', '.join(similar_companies) if similar_companies else None
         )
-        db.session.add(new_app)
-        db.session.commit()
+        
+        # Add categories to the application
+        for category_name in service_categories:
+            # Find or create category
+            category = Category.query.filter_by(name=category_name).first()
+            if not category:
+                category = Category(name=category_name)
+                db.session.add(category)
+            new_app.categories.append(category)
+        
+        try:
+            db.session.add(new_app)
+            db.session.commit()
+            
+            # Log successful submission
+            logger.info(
+                f"Application submitted successfully: id={new_app.id}, "
+                f"company='{company_name}', fuzzy_warning={fuzzy_match_warning}, ip={client_ip}"
+            )
 
-        return jsonify({
-            "success": True,
-            "message": "درخواست شما با موفقیت ثبت شد",
-            "data": {
-                "id": new_app.id,
-                "status": new_app.status
+            response_data = {
+                "success": True,
+                "message": "درخواست شما با موفقیت ثبت شد",
+                "data": {
+                    "id": new_app.id,
+                    "status": new_app.status
+                }
             }
-        }), 201
+            
+            # Add fuzzy match warning to response if applicable
+            if fuzzy_match_warning:
+                response_data["warning"] = {
+                    "code": "SIMILAR_COMPANY_NAME",
+                    "message": f"نام شرکت شما شباهت زیادی به شرکت‌های موجود در سیستم دارد: {', '.join(similar_companies[:2])}",
+                    "note": "اگر این شرکت شما نیست، درخواست شما در حال بررسی است."
+                }
+
+            return jsonify(response_data), 201
+            
+        except IntegrityError as e:
+            db.session.rollback()
+            
+            # This catches database-level unique constraint violations
+            if 'phone_mobile' in str(e.orig):
+                phone_hash = hashlib.sha256(phone_mobile.encode()).hexdigest()[:16]
+                logger.error(
+                    f"Database constraint violation (duplicate phone): phone_hash={phone_hash}, ip={client_ip}"
+                )
+                
+                support_phone = current_app.config.get('SUPPORT_PHONE', '021-12345678')
+                
+                return jsonify({
+                    "success": False,
+                    "error": {
+                        "code": "DUPLICATE_PHONE",
+                        "message": "این شماره موبایل قبلاً در سیستم ثبت شده است.",
+                        "action": "لطفاً با شماره دیگری ثبت‌نام کنید یا با پشتیبانی تماس بگیرید.",
+                        "support_contact": support_phone
+                    }
+                }), 409
+            else:
+                logger.error(f"Database integrity error: {str(e)}", exc_info=True)
+                raise
         
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error creating provider application: {str(e)}", exc_info=True)
         return jsonify({
             "success": False,
-            "error": "خطا در ثبت درخواست"
+            "error": {
+                "code": "SERVER_ERROR",
+                "message": "خطا در ثبت درخواست. لطفاً دوباره تلاش کنید."
+            }
         }), 500
 
 
@@ -104,8 +288,10 @@ def get_pending_applications(current_user):
         
         pagination = PaginationParams(page=page, per_page=per_page)
         
-        # Query applications
-        query = ProviderApplication.query.filter_by(status=status).order_by(
+        # Query applications with eager loading of categories
+        query = ProviderApplication.query.options(
+            db.joinedload(ProviderApplication.categories)
+        ).filter_by(status=status).order_by(
             ProviderApplication.created_at.desc()
         )
         
@@ -139,7 +325,10 @@ def get_pending_applications(current_user):
 def get_application_details(current_user, app_id):
     """Get application details - Business Expert only"""
     try:
-        app = ProviderApplication.query.get(app_id)
+        # Use eager loading for categories
+        app = ProviderApplication.query.options(
+            db.joinedload(ProviderApplication.categories)
+        ).get(app_id)
         
         if not app:
             return jsonify({
@@ -166,7 +355,10 @@ def get_application_details(current_user, app_id):
 def approve_application(current_user, app_id):
     """Approve an application and create/update company - Business Expert only"""
     try:
-        app = ProviderApplication.query.get(app_id)
+        # Use eager loading for categories
+        app = ProviderApplication.query.options(
+            db.joinedload(ProviderApplication.categories)
+        ).get(app_id)
         
         if not app:
             return jsonify({
@@ -187,22 +379,16 @@ def approve_application(current_user, app_id):
         app.review_notes = sanitize_string(data.get("notes", "")) if data.get("notes") else None
         app.reviewed_by = current_user.id
 
-        # Create a new company from the application
-        # Check if a category with the given service domain exists, or create it
-        category = Category.query.filter_by(name=app.service_domain).first()
-        if not category:
-            category = Category(name=app.service_domain)
-            db.session.add(category)
-            db.session.flush()
-
         # Check if company with this phone number already exists
         existing_company = Company.query.filter_by(phone_mobile=app.phone_mobile).first()
+        
         if existing_company:
-            # Update the existing company and link the category
-            if category not in existing_company.categories:
-                existing_company.categories.append(category)
+            # Update the existing company and link all categories
+            for category in app.categories:
+                if category not in existing_company.categories:
+                    existing_company.categories.append(category)
         else:
-            # Create a new company
+            # Create a new company with all categories
             new_company = Company(
                 name=app.company_name,
                 address=app.address,
@@ -213,7 +399,9 @@ def approve_application(current_user, app_id):
                 is_active=True,
                 created_by=current_user.id
             )
-            new_company.categories.append(category)
+            # Add all categories from the application
+            for category in app.categories:
+                new_company.categories.append(category)
             db.session.add(new_company)
 
         db.session.commit()

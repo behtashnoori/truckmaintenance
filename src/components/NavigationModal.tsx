@@ -27,18 +27,25 @@ export const NavigationModal: React.FC<NavigationModalProps> = ({
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [routeInfo, setRouteInfo] = useState<RouteResponse | null>(null);
   const [isLoadingRoute, setIsLoadingRoute] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   // Get user location and route info when modal opens
   useEffect(() => {
     if (isOpen) {
       const loadRouteInfo = async () => {
+        console.log('🚀 NavigationModal: Starting location request...');
+        setLocationError(null);
+        
         try {
           const location = await NavigationService.getCurrentLocation();
+          console.log('📍 NavigationModal: Location result:', location);
+          
           if (location) {
             setUserLocation(location);
             setIsLoadingRoute(true);
+            setLocationError(null);
             
-            console.log('Loading route info for:', {
+            console.log('🗺️ Loading route info for:', {
               from: `${location.lat},${location.lon}`,
               to: `${lat},${lon}`
             });
@@ -51,11 +58,11 @@ export const NavigationModal: React.FC<NavigationModalProps> = ({
               lon
             );
             
-            console.log('Route info received:', route);
+            console.log('📊 Route info received:', route);
             
             // If API didn't return valid data, use fallback calculation
             if (!route || !route.distance || !route.duration) {
-              console.log('API returned invalid data, using fallback calculation...');
+              console.log('⚠️ API returned invalid data, using fallback calculation...');
               const fallbackDistance = NavigationService.calculateDistance(
                 location.lat, location.lon, lat, lon
               ) * 1000; // Convert to meters
@@ -71,19 +78,22 @@ export const NavigationModal: React.FC<NavigationModalProps> = ({
                 }]
               };
               
-              console.log('Using fallback route:', fallbackRoute);
+              console.log('✅ Using fallback route:', fallbackRoute);
               setRouteInfo(fallbackRoute);
             } else {
+              console.log('✅ Using API route:', route);
               setRouteInfo(route);
             }
           } else {
-            console.warn('User location not available');
+            console.warn('❌ User location not available - permission denied or error occurred');
             setUserLocation(null);
             setRouteInfo(null);
+            setLocationError('دسترسی به موقعیت مکانی رد شد یا خطا رخ داد');
           }
         } catch (error) {
-          console.error('Error loading route info:', error);
+          console.error('💥 Error loading route info:', error);
           setRouteInfo(null);
+          setLocationError('خطا در دریافت موقعیت مکانی');
         } finally {
           setIsLoadingRoute(false);
         }
@@ -92,9 +102,11 @@ export const NavigationModal: React.FC<NavigationModalProps> = ({
       loadRouteInfo();
     } else {
       // Reset state when modal closes
+      console.log('🔄 NavigationModal: Resetting state...');
       setUserLocation(null);
       setRouteInfo(null);
       setIsLoadingRoute(false);
+      setLocationError(null);
     }
   }, [isOpen, lat, lon]);
 
@@ -107,6 +119,48 @@ export const NavigationModal: React.FC<NavigationModalProps> = ({
       originLon: userLocation?.lon 
     });
     onClose();
+  };
+
+  // تشخیص نوع دستگاه برای نمایش پیام مناسب
+  const isMobile = NavigationService.isMobileDevice();
+  const deviceInfo = isMobile 
+    ? 'باز می‌شود در اپلیکیشن نشان (اگر نصب باشد)'
+    : 'باز می‌شود در مرورگر';
+  
+  const buttonText = isMobile
+    ? 'باز کردن در اپلیکیشن نشان'
+    : 'مسیریابی با نشان';
+
+  // تابع تلاش مجدد برای دریافت موقعیت
+  const retryLocation = async () => {
+    console.log('🔄 Retrying location request...');
+    setLocationError(null);
+    setUserLocation(null);
+    setRouteInfo(null);
+    
+    const location = await NavigationService.getCurrentLocation();
+    if (location) {
+      setUserLocation(location);
+      // محاسبه مسیر با موقعیت جدید
+      const fallbackDistance = NavigationService.calculateDistance(
+        location.lat, location.lon, lat, lon
+      ) * 1000;
+      const fallbackDuration = Math.round(fallbackDistance / 1000 * 60);
+      
+      const fallbackRoute = {
+        distance: fallbackDistance,
+        duration: fallbackDuration,
+        legs: [{
+          distance: fallbackDistance,
+          duration: fallbackDuration,
+          steps: []
+        }]
+      };
+      
+      setRouteInfo(fallbackRoute);
+    } else {
+      setLocationError('دسترسی به موقعیت مکانی رد شد');
+    }
   };
 
   const formatDistance = (meters: number): string => {
@@ -228,26 +282,53 @@ export const NavigationModal: React.FC<NavigationModalProps> = ({
           )}
 
           {!isLoadingRoute && !routeInfo && !userLocation && (
-            <div className="bg-red-50 p-3 rounded-lg border border-red-200">
-              <p className="text-sm text-red-700 text-center">
-                دسترسی به موقعیت مکانی امکان‌پذیر نیست. لطفاً دسترسی موقعیت را در مرورگر فعال کنید.
-              </p>
+            <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+              <div className="text-center">
+                <p className="text-sm text-red-700 mb-3">
+                  {locationError || 'دسترسی به موقعیت مکانی امکان‌پذیر نیست. لطفاً دسترسی موقعیت را در مرورگر فعال کنید.'}
+                </p>
+                
+                <div className="space-y-2">
+                  <Button 
+                    onClick={retryLocation}
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-red-300 text-red-700 hover:bg-red-50"
+                  >
+                    🔄 تلاش مجدد
+                  </Button>
+                  
+                  <p className="text-xs text-red-600">
+                    💡 راهنمای رفع مشکل:<br/>
+                    • روی آیکون قفل کنار آدرس کلیک کنید<br/>
+                    • "موقعیت مکانی" را روی "مجاز" تنظیم کنید<br/>
+                    • صفحه را refresh کنید
+                  </p>
+                </div>
+              </div>
             </div>
           )}
+
+          {/* Device Info */}
+          <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-700 text-center">
+              📱 {deviceInfo}
+            </p>
+          </div>
 
           {/* Neshan Navigation Button */}
           <Button
             onClick={handleOpenNeshan}
             className="w-full h-14 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-all"
-            disabled={!userLocation}
+            disabled={false} // همیشه فعال باشه
           >
             <Navigation2 className="h-5 w-5 ml-2" />
-            باز کردن در نشان
+            {userLocation ? buttonText : 'مسیریابی به مقصد'}
           </Button>
 
           {!userLocation && (
             <p className="text-xs text-center text-gray-500">
-              لطفاً دسترسی به موقعیت مکانی را فعال کنید
+              ⚠️ بدون موقعیت فعلی، فقط مقصد در نشان نمایش داده می‌شود
             </p>
           )}
 

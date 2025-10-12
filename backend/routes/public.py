@@ -49,8 +49,15 @@ def get_providers():
         lon = request.args.get('lon', type=float)
         category = request.args.get('category')
         vehicle = request.args.get('vehicle')
+        ignore_distance = request.args.get('ignore_distance', 'false').lower() == 'true'
         
-        if not lat or not lon:
+        # If category filter is provided but no location, show all in category
+        if category and (not lat or not lon):
+            ignore_distance = True
+            # Use dummy coordinates for distance calculation
+            lat = lat or 35.6892
+            lon = lon or 51.3890
+        elif not lat or not lon:
             return jsonify({
                 'success': False,
                 'error': 'موقعیت جغرافیایی الزامی است'
@@ -65,28 +72,31 @@ def get_providers():
         
         companies = query.all()
         
-        # Calculate distances and filter by radius
+        # Calculate distances and optionally filter by radius
         results = []
         for company in companies:
             # Calculate distance (simplified - in production use proper geospatial queries)
             distance_km = CompanyService.calculate_distance(lat, lon, company.latitude, company.longitude)
             
-            if distance_km <= company.service_radius_km:
-                # Filter by vehicle type if specified
-                if vehicle and company.vehicle_types and vehicle not in company.vehicle_types:
-                    continue
-                    
-                results.append({
-                    'id': company.id,
-                    'name': company.company_name,
-                    'phone': company.phone_mobile,
-                    'address': company.address,
-                    'distance_km': round(distance_km, 1),
-                    'is_24_7': company.is_24_7,
-                    'vehicle_types': company.vehicle_types or [],
-                    'radius_km': company.service_radius_km,
-                    'categories': [cat.name for cat in company.categories]
-                })
+            # Skip distance filtering if ignore_distance is True or if filtering by category only
+            if not ignore_distance and distance_km > company.service_radius_km:
+                continue
+                
+            # Filter by vehicle type if specified
+            if vehicle and company.vehicle_types and vehicle not in company.vehicle_types:
+                continue
+                
+            results.append({
+                'id': company.id,
+                'name': company.company_name or company.name,
+                'phone': company.phone_mobile,
+                'address': company.address,
+                'distance_km': round(distance_km, 1),
+                'is_24_7': company.is_24_7,
+                'vehicle_types': company.vehicle_types or [],
+                'radius_km': company.service_radius_km,
+                'categories': [cat.name for cat in company.categories]
+            })
         
         # Sort by distance
         results.sort(key=lambda x: x['distance_km'])

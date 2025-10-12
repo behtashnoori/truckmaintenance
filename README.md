@@ -15,6 +15,24 @@ This project delivers a two-part system for locating and registering heavy vehic
 - Alembic (Flask-Migrate)
 - React + TypeScript + Vite
 - Tailwind CSS & shadcn/ui
+- Neshan Maps API (Navigation & Routing)
+
+---
+
+## Key Features
+
+### 🗺️ Neshan Navigation Integration
+- **Smart Device Detection**: Automatically detects mobile/desktop devices
+- **Deep Links Support**: Opens Neshan app on mobile (Android/iOS) if installed
+- **Automatic Fallback**: Falls back to web version if app is not installed
+- **Real-time Routing**: Calculates actual route distance and duration using Neshan API
+- **User Location**: Gets user's current location for accurate navigation
+- **Cross-platform**: Works seamlessly on mobile (iOS/Android) and desktop
+
+📖 **Documentation**: 
+- [Neshan Setup Guide](NESHAN_SETUP.md) - Complete setup and API documentation
+- [User Guide](docs/NAVIGATION_USER_GUIDE.md) - Step-by-step navigation guide
+- [Test Navigation](test_navigation.html) - Interactive testing page
 
 ---
 

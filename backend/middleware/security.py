@@ -106,9 +106,106 @@ def validate_email(email):
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(pattern, email) is not None
 
+def sanitize_phone(phone):
+    """Sanitize phone number by removing spaces, dashes, and other non-digit characters"""
+    if not isinstance(phone, str):
+        return phone
+    
+    # Remove all non-digit characters
+    sanitized = ''.join(filter(str.isdigit, phone))
+    
+    # Handle +98 country code (convert to 0)
+    if sanitized.startswith('98') and len(sanitized) == 12:
+        sanitized = '0' + sanitized[2:]
+    
+    return sanitized
+
 def validate_phone(phone):
-    """Validate phone number format"""
+    """Validate Iranian phone number format"""
     import re
-    # Iranian phone number format
+    
+    # First sanitize the phone number
+    phone = sanitize_phone(phone)
+    
+    # Iranian mobile phone format (09XXXXXXXXX)
     pattern = r'^09\d{9}$'
-    return re.match(pattern, phone) is not None
+    
+    if not re.match(pattern, phone):
+        return False
+    
+    # Additional validation: check for invalid patterns
+    # Reject phones with all same digits (e.g., 09111111111)
+    if len(set(phone[2:])) == 1:  # All digits after 09 are the same
+        return False
+    
+    # Reject known test/invalid patterns
+    invalid_patterns = [
+        '09000000000',
+        '09999999999',
+        '09123456789',  # Common test number
+    ]
+    
+    if phone in invalid_patterns:
+        return False
+    
+    return True
+
+def validate_company_name(company_name):
+    """Validate company name for suspicious patterns"""
+    if not isinstance(company_name, str):
+        return False
+    
+    name = company_name.strip()
+    
+    # Check minimum and maximum length
+    if len(name) < 2 or len(name) > 255:
+        return False
+    
+    # Check for excessive repeated characters (e.g., "aaaaaaa")
+    if len(set(name)) < 3 and len(name) > 5:
+        return False
+    
+    # Check for SQL injection patterns
+    sql_patterns = ['--', ';', 'DROP ', 'DELETE ', 'INSERT ', 'UPDATE ', 'SELECT ']
+    for pattern in sql_patterns:
+        if pattern.lower() in name.lower():
+            return False
+    
+    # Check for excessive special characters
+    special_char_count = sum(1 for c in name if not c.isalnum() and not c.isspace() and c not in '-،.')
+    if special_char_count > len(name) * 0.3:  # More than 30% special chars
+        return False
+    
+    # Reject if it's just numbers
+    if name.replace(' ', '').replace('-', '').isdigit():
+        return False
+    
+    return True
+
+def check_suspicious_patterns(data):
+    """Check for suspicious patterns in application data"""
+    warnings = []
+    
+    # Check company name
+    company_name = data.get('companyName', '')
+    if not validate_company_name(company_name):
+        warnings.append('نام شرکت نامعتبر است')
+    
+    # Check for test data patterns
+    test_patterns = ['test', 'تست', 'آزمایش', 'sample', 'نمونه', 'demo']
+    for pattern in test_patterns:
+        if pattern in company_name.lower():
+            warnings.append(f'نام شرکت حاوی کلمه آزمایشی است: {pattern}')
+    
+    # Check representative names for suspicious patterns
+    first_name = data.get('representativeFirstName', '').strip()
+    last_name = data.get('representativeLastName', '').strip()
+    
+    if len(first_name) < 2 or len(last_name) < 2:
+        warnings.append('نام یا نام خانوادگی نماینده خیلی کوتاه است')
+    
+    # Check if first and last names are identical
+    if first_name and last_name and first_name == last_name:
+        warnings.append('نام و نام خانوادگی نماینده یکسان است')
+    
+    return warnings

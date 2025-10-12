@@ -14,9 +14,10 @@ export const SearchPage: React.FC = () => {
   const navigate = useNavigate();
 
   const handleDirectNavigation = (category: ServiceCategory) => {
-    // For now, allow all categories without location check
-    // Navigate directly using the category name as slug
-    navigate(`/c/${category}`);
+    // Navigate to category providers page using slug format
+    // Convert category name to slug (replace spaces with dashes)
+    const slug = category.replace(/\s+/g, '-');
+    navigate(`/category/${slug}`);
   };
 
   return (

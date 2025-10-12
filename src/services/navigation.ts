@@ -30,6 +30,29 @@ export interface RouteResponse {
 
 export class NavigationService {
   /**
+   * Check if the device is a mobile device
+   */
+  static isMobileDevice(): boolean {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    );
+  }
+
+  /**
+   * Check if the device is iOS
+   */
+  static isIOS(): boolean {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent);
+  }
+
+  /**
+   * Check if the device is Android
+   */
+  static isAndroid(): boolean {
+    return /Android/.test(navigator.userAgent);
+  }
+
+  /**
    * Get route information from Neshan API
    */
   static async getRoute(
@@ -146,27 +169,56 @@ export class NavigationService {
   }
 
   /**
-   * Open Neshan navigation
+   * Open Neshan navigation with deep link support for mobile apps
    */
   static async openNeshan(options: NavigationOptions): Promise<void> {
-    const { lat, lon, label, originLat, originLon } = options;
+    const { lat, lon, originLat, originLon } = options;
     
-    // If we have user's current location, try to create a route
-    if (originLat && originLon) {
-      // Use Neshan's route format with both coordinates
-      const routeUrl = `${NESHAN_CONFIG.WEB_MAP_URL}/routes?type=car&origin=${originLat},${originLon}&destination=${lat},${lon}`;
-      window.open(routeUrl, '_blank');
-    } else {
-      // Try to get current location first
-      const userLocation = await this.getCurrentLocation();
-      if (userLocation) {
-        const routeUrl = `${NESHAN_CONFIG.WEB_MAP_URL}/routes?type=car&origin=${userLocation.lat},${userLocation.lon}&destination=${lat},${lon}`;
-        window.open(routeUrl, '_blank');
+    // دریافت موقعیت کاربر اگر نداریم
+    const origin = originLat && originLon 
+      ? { lat: originLat, lon: originLon }
+      : await this.getCurrentLocation();
+    
+    if (!origin) {
+      // فال‌بک: فقط نمایش روی نقشه
+      const webUrl = `${NESHAN_CONFIG.WEB_MAP_URL}/@${lat},${lon},15z`;
+      window.open(webUrl, '_blank');
+      return;
+    }
+    
+    const routeParams = `type=car&origin=${origin.lat},${origin.lon}&destination=${lat},${lon}`;
+    
+    if (this.isMobileDevice()) {
+      // تلاش برای باز کردن اپلیکیشن نشان
+      if (this.isAndroid()) {
+        // Android Deep Link
+        const appUrl = `nshn://routes?${routeParams}`;
+        window.location.href = appUrl;
+        
+        // فال‌بک به وب پس از 2 ثانیه (اگر اپ نصب نباشد)
+        setTimeout(() => {
+          const webUrl = `${NESHAN_CONFIG.WEB_MAP_URL}/routes?${routeParams}`;
+          window.open(webUrl, '_blank');
+        }, 2000);
+      } else if (this.isIOS()) {
+        // iOS Universal Link
+        const appUrl = `neshan://routes?${routeParams}`;
+        window.location.href = appUrl;
+        
+        // فال‌بک به وب پس از 2 ثانیه (اگر اپ نصب نباشد)
+        setTimeout(() => {
+          const webUrl = `${NESHAN_CONFIG.WEB_MAP_URL}/routes?${routeParams}`;
+          window.open(webUrl, '_blank');
+        }, 2000);
       } else {
-        // Fallback to simple map view
-        const webUrl = `${NESHAN_CONFIG.WEB_MAP_URL}/@${lat},${lon},${NESHAN_CONFIG.DEFAULT_ZOOM}z`;
+        // سایر موبایل‌ها: مستقیم وب
+        const webUrl = `${NESHAN_CONFIG.WEB_MAP_URL}/routes?${routeParams}`;
         window.open(webUrl, '_blank');
       }
+    } else {
+      // دسکتاپ: همیشه وب نشان
+      const webUrl = `${NESHAN_CONFIG.WEB_MAP_URL}/routes?${routeParams}`;
+      window.open(webUrl, '_blank');
     }
   }
 
@@ -225,25 +277,41 @@ export class NavigationService {
   static async getCurrentLocation(): Promise<{ lat: number; lon: number } | null> {
     return new Promise((resolve) => {
       if (!navigator.geolocation) {
+        console.error('Geolocation is not supported by this browser');
         resolve(null);
         return;
       }
 
+      console.log('Requesting location access...');
+
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          console.log('Location received:', {
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
+            accuracy: position.coords.accuracy
+          });
           resolve({
             lat: position.coords.latitude,
             lon: position.coords.longitude
           });
         },
         (error) => {
-          console.error('Error getting location:', error);
+          console.error('Geolocation error:', {
+            code: error.code,
+            message: error.message,
+            codeDescriptions: {
+              1: 'PERMISSION_DENIED',
+              2: 'POSITION_UNAVAILABLE', 
+              3: 'TIMEOUT'
+            }
+          });
           resolve(null);
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 300000 // 5 minutes
+          timeout: 15000, // افزایش timeout به 15 ثانیه
+          maximumAge: 60000 // کاهش cache به 1 دقیقه
         }
       );
     });

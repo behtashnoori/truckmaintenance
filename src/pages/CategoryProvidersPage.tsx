@@ -33,10 +33,9 @@ export const CategoryProvidersPage: React.FC = () => {
       const categoryName = slug.replace(/-/g, ' ');
       setCategoryName(categoryName);
 
-      // Use fetch directly to avoid api wrapper issues
+      // Get all companies for this category without distance filtering
+      // Backend will automatically ignore distance if only category is provided
       const params = new URLSearchParams({
-        lat: '35.6892',
-        lon: '51.3890',
         category: categoryName
       });
 
@@ -46,7 +45,9 @@ export const CategoryProvidersPage: React.FC = () => {
         const data = await response.json();
         
         if (data.success && data.data) {
-          setProviders(data.data);
+          // Sort by distance
+          const sorted = data.data.sort((a: any, b: any) => a.distance_km - b.distance_km);
+          setProviders(sorted);
         } else {
           setError(data.error || 'خطا در بارگذاری نتایج');
         }
