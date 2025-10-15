@@ -191,6 +191,8 @@ def get_categories():
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate'
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '0'
+        response.headers['Last-Modified'] = 'Thu, 01 Jan 1970 00:00:00 GMT'
+        response.headers['ETag'] = f'"{hash(str(result))}"'
         
         return response, 200
         

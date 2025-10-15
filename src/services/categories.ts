@@ -11,7 +11,7 @@ export interface UICategory {
 }
 
 // App version for cache invalidation
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.0.1';
 const LS_KEY = `app:${APP_VERSION}:categories`;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 

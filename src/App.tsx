@@ -7,6 +7,7 @@ import { LocationProvider } from "@/contexts/LocationContext";
 import { SessionProvider } from "@/contexts/SessionContext";
 import { SessionWarningWrapper } from "@/components/SessionWarningWrapper";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { clearOldCache } from "@/services/categories";
 import Index from "./pages/Index";
 import { SearchPage } from "./pages/SearchPage";
 import { CategoryPage } from "./pages/CategoryPage";
@@ -40,6 +41,9 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+// Clear old cache on app startup
+clearOldCache();
 
 const App = () => (
   <ErrorBoundary>
