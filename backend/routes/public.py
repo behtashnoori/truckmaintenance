@@ -182,10 +182,17 @@ def get_categories():
                 'companies_count': company_count
             })
         
-        return jsonify({
+        response = jsonify({
             'success': True,
             'data': result
-        }), 200
+        })
+        
+        # Add cache control headers to prevent stale data
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        
+        return response, 200
         
     except Exception as e:
         logger.error(f"Error getting categories: {str(e)}", exc_info=True)

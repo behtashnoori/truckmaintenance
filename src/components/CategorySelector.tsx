@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ServiceCategory } from '@/lib/api';
-import { Truck, Settings, AlertTriangle, Droplet, Tag } from 'lucide-react';
+import { Tag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { getCategories, UICategory } from '@/services/categories';
 
 interface CategorySelectorProps {
   selectedCategory?: ServiceCategory;
@@ -16,42 +17,14 @@ interface CategorySelectorProps {
   onDirectNavigate?: (category: ServiceCategory) => void;
 }
 
-interface Category {
-  id: number;
-  name: string;
-  companies_count?: number;
+interface CategoryItem {
+  id: ServiceCategory;
+  title: string;
+  description: string;
+  icon: any;
+  disabled?: boolean;
+  originalName?: string;
 }
-
-// Default categories as fallback
-const defaultCategories = [
-  {
-    id: 'roadside' as ServiceCategory,
-    title: 'خدمات جاده‌ای',
-    description: 'پارکینگ، سوخت، رستوران',
-    icon: Truck,
-    disabled: true,
-  },
-  {
-    id: 'tire' as ServiceCategory,
-    title: 'لاستیک و رینگ',
-    description: 'تعویض و تعمیر لاستیک',
-    icon: Settings,
-    disabled: true,
-  },
-  {
-    id: 'recovery' as ServiceCategory,
-    title: 'امداد و حادثه',
-    description: 'یدک‌کش و تعمیرات اضطراری',
-    icon: AlertTriangle,
-    disabled: true,
-  },
-  {
-    id: 'oil' as ServiceCategory,
-    title: 'فروش روغن و فیلتر',
-    description: 'نمایندگی‌ها و فروشگاه‌های روغن',
-    icon: Droplet,
-  },
-];
 
 export const CategorySelector: React.FC<CategorySelectorProps> = ({
   selectedCategory,
@@ -64,7 +37,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   directNavigation = false,
   onDirectNavigate,
 }) => {
-  const [categories, setCategories] = useState(defaultCategories);
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -74,24 +47,19 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/public/categories');
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          const apiCategories = data.data.map((cat: Category) => ({
-            id: cat.name.toLowerCase().replace(/\s+/g, '-') as ServiceCategory,
-            title: cat.name,
-            description: `${cat.companies_count || 0} ارائه‌دهنده`,
-            icon: Tag,
-            disabled: false,
-            originalName: cat.name,
-          }));
-          setCategories(apiCategories);
-        }
-      }
+      const items = await getCategories();
+      const categoryItems: CategoryItem[] = items.map(cat => ({
+        id: cat.id as ServiceCategory,
+        title: cat.title,
+        description: cat.description,
+        icon: Tag,
+        disabled: false,
+        originalName: cat.originalName,
+      }));
+      setCategories(categoryItems);
     } catch (error) {
       console.error('Error fetching categories:', error);
-      // Keep default categories on error
+      // Keep empty array on error - no fallback
     } finally {
       setIsLoading(false);
     }
@@ -128,6 +96,23 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
     // Navigate to category providers page
     window.location.href = `/category/${categoryId}`;
   };
+
+  // Loading skeleton
+  if (isLoading) {
+    return (
+      <div className={`grid grid-cols-2 gap-3 ${className}`}>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Button key={i} variant="outline" className="h-auto p-4 opacity-60" disabled>
+            <div className="w-full animate-pulse">
+              <div className="h-5 bg-gray-200 rounded mb-2" />
+              <div className="h-3 bg-gray-200 rounded w-2/3" />
+            </div>
+          </Button>
+        ))}
+      </div>
+    );
+  }
+
   if (variant === 'compact') {
     return (
       <div className={`flex gap-2 ${className}`}>
