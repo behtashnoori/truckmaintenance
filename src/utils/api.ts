@@ -1,4 +1,4 @@
-export const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
+export const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 // if (!import.meta.env.VITE_API_BASE_URL) console.warn('VITE_API_BASE_URL is not defined, defaulting to http://localhost:5000');
 
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, '');

@@ -37,6 +37,7 @@ import CompaniesManagement from "./pages/admin/CompaniesManagement";
 import Reports from "./pages/admin/Reports";
 import UsersManagement from "./pages/admin/UsersManagement";
 import Settings from "./pages/admin/Settings";
+import ContentManagement from "./pages/admin/ContentManagement";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
@@ -116,6 +117,11 @@ const App = () => (
             <Route path="/admin/settings" element={
               <ProtectedRoute requiredRole="admin">
                 <Settings />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/content" element={
+              <ProtectedRoute requiredRole="admin">
+                <ContentManagement />
               </ProtectedRoute>
             } />
             {/* Business Expert Routes */}

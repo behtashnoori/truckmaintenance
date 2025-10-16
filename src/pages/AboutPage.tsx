@@ -3,8 +3,49 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Truck, Users, Target, Shield, Award, MapPin } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { apiFetch } from '@/utils/api';
+import { convertToPersianNumbers } from '@/utils/persianNumbers';
 
 export const AboutPage: React.FC = () => {
+  const { data: aboutContent, isLoading, error } = useQuery({
+    queryKey: ['about-content'],
+    queryFn: async () => {
+      const response = await apiFetch('/api/content/about');
+      if (!response.success) {
+        throw new Error(response.error || 'خطا در دریافت محتوا');
+      }
+      return response.data;
+    },
+    staleTime: 1 * 60 * 1000, // 1 minute
+  });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header title="درباره ما" />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">در حال بارگذاری...</div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error || !aboutContent) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header title="درباره ما" />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center text-red-600">
+            خطا در بارگذاری محتوا
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header title="درباره ما" />
@@ -13,9 +54,9 @@ export const AboutPage: React.FC = () => {
         {/* Hero Section */}
         <div className="gradient-hero text-white p-6 rounded-lg text-center">
           <Truck size={48} className="mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-2">امداد کامیون</h1>
+          <h1 className="text-2xl font-bold mb-2">{convertToPersianNumbers(aboutContent.hero_title || 'امداد کامیون')}</h1>
           <p className="opacity-90">
-            پلتفرم جامع خدمات اضطراری و تعمیرات خودروهای سنگین
+            {convertToPersianNumbers(aboutContent.hero_subtitle || 'پلتفرم جامع خدمات اضطراری و تعمیرات خودروهای سنگین')}
           </p>
         </div>
 
@@ -27,7 +68,7 @@ export const AboutPage: React.FC = () => {
               <div>
                 <h2 className="text-lg font-semibold mb-2">ماموریت ما</h2>
                 <p className="text-muted-foreground">
-                  هدف ما ارائه سریع‌ترین و مطمئن‌ترین خدمات امداد و تعمیرات برای رانندگان کامیون و خودروهای سنگین در سراسر کشور است. ما معتقدیم که هر راننده‌ای حق دارد در هر زمان و مکان به خدمات با کیفیت دسترسی داشته باشد.
+                  {convertToPersianNumbers(aboutContent.mission_text || 'هدف ما ارائه سریع‌ترین و مطمئن‌ترین خدمات امداد و تعمیرات برای رانندگان کامیون و خودروهای سنگین در سراسر کشور است. ما معتقدیم که هر راننده‌ای حق دارد در هر زمان و مکان به خدمات با کیفیت دسترسی داشته باشد.')}
                 </p>
               </div>
             </div>
@@ -42,7 +83,7 @@ export const AboutPage: React.FC = () => {
               <div>
                 <h2 className="text-lg font-semibold mb-2">تیم ما</h2>
                 <p className="text-muted-foreground">
-                  تیم امداد کامیون متشکل از مهندسان، متخصصان فنی و کارشناسان مجرب در زمینه حمل‌ونقل و خدمات خودرویی است. ما با بیش از ۱۰ سال تجربه در این صنعت، به دنبال ایجاد راه‌حلی مدرن و کارآمد برای نیازهای رانندگان هستیم.
+                  {convertToPersianNumbers(aboutContent.team_text || 'تیم امداد کامیون متشکل از مهندسان، متخصصان فنی و کارشناسان مجرب در زمینه حمل‌ونقل و خدمات خودرویی است. ما با بیش از ۱۰ سال تجربه در این صنعت، به دنبال ایجاد راه‌حلی مدرن و کارآمد برای نیازهای رانندگان هستیم.')}
                 </p>
               </div>
             </div>
@@ -56,7 +97,7 @@ export const AboutPage: React.FC = () => {
               <Shield size={32} className="mx-auto mb-3 text-primary" />
               <h3 className="font-semibold mb-2">امنیت و اعتماد</h3>
               <p className="text-sm text-muted-foreground">
-                همه ارائه‌دهندگان خدمات ما تأیید شده و دارای مجوزهای لازم هستند
+                {convertToPersianNumbers(aboutContent.feature_security || 'همه ارائه‌دهندگان خدمات ما تأیید شده و دارای مجوزهای لازم هستند')}
               </p>
             </CardContent>
           </Card>
@@ -66,7 +107,7 @@ export const AboutPage: React.FC = () => {
               <MapPin size={32} className="mx-auto mb-3 text-primary" />
               <h3 className="font-semibold mb-2">پوشش سراسری</h3>
               <p className="text-sm text-muted-foreground">
-                خدمات در تمام نقاط کشور و جاده‌های اصلی در دسترس است
+                {convertToPersianNumbers(aboutContent.feature_coverage || 'خدمات در تمام نقاط کشور و جاده‌های اصلی در دسترس است')}
               </p>
             </CardContent>
           </Card>
@@ -76,7 +117,7 @@ export const AboutPage: React.FC = () => {
               <Award size={32} className="mx-auto mb-3 text-primary" />
               <h3 className="font-semibold mb-2">کیفیت بالا</h3>
               <p className="text-sm text-muted-foreground">
-                استانداردهای سخت‌گیرانه برای انتخاب و ارزیابی ارائه‌دهندگان
+                {convertToPersianNumbers(aboutContent.feature_quality || 'استانداردهای سخت‌گیرانه برای انتخاب و ارزیابی ارائه‌دهندگان')}
               </p>
             </CardContent>
           </Card>
@@ -86,7 +127,7 @@ export const AboutPage: React.FC = () => {
               <Truck size={32} className="mx-auto mb-3 text-primary" />
               <h3 className="font-semibold mb-2">تخصص در کامیون</h3>
               <p className="text-sm text-muted-foreground">
-                متمرکز بر نیازهای خاص خودروهای سنگین و تجاری
+                {convertToPersianNumbers(aboutContent.feature_expertise || 'متمرکز بر نیازهای خاص خودروهای سنگین و تجاری')}
               </p>
             </CardContent>
           </Card>

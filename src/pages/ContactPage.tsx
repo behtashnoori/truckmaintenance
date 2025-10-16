@@ -9,6 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Phone, Mail, MapPin, Clock, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { submitContactForm } from '@/lib/api';
+import { useQuery } from '@tanstack/react-query';
+import { apiFetch } from '@/utils/api';
+import { convertToPersianNumbers } from '@/utils/persianNumbers';
 
 export const ContactPage: React.FC = () => {
   const { toast } = useToast();
@@ -18,6 +21,18 @@ export const ContactPage: React.FC = () => {
     email: '',
     subject: '',
     message: ''
+  });
+
+  const { data: contactContent, isLoading, error } = useQuery({
+    queryKey: ['contact-content'],
+    queryFn: async () => {
+      const response = await apiFetch('/api/content/contact');
+      if (!response.success) {
+        throw new Error(response.error || 'خطا در دریافت محتوا');
+      }
+      return response.data;
+    },
+    staleTime: 1 * 60 * 1000, // 1 minute (کاهش cache time)
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -55,6 +70,32 @@ export const ContactPage: React.FC = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header title="تماس با ما" />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">در حال بارگذاری...</div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error || !contactContent) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header title="تماس با ما" />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center text-red-600">
+            خطا در بارگذاری محتوا
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header title="تماس با ما" />
@@ -67,8 +108,8 @@ export const ContactPage: React.FC = () => {
               <Phone size={32} className="mx-auto mb-3 text-primary" />
               <h3 className="font-semibold mb-2">تلفن پشتیبانی</h3>
               <p className="text-sm text-muted-foreground mb-2">۲۴ ساعته در خدمت شما</p>
-              <a href="tel:+982112345678" className="text-primary font-medium">
-                ۰۲۱-۱۲۳۴۵۶۷۸
+              <a href={`tel:${contactContent.contact_phone || '+982112345678'}`} className="text-primary font-medium">
+                {convertToPersianNumbers(contactContent.contact_phone || '۰۲۱-۱۲۳۴۵۶۷۸')}
               </a>
             </CardContent>
           </Card>
@@ -78,8 +119,8 @@ export const ContactPage: React.FC = () => {
               <Mail size={32} className="mx-auto mb-3 text-primary" />
               <h3 className="font-semibold mb-2">ایمیل</h3>
               <p className="text-sm text-muted-foreground mb-2">پاسخ در کمتر از ۲۴ ساعت</p>
-              <a href="mailto:support@truckaid.ir" className="text-primary font-medium">
-                support@truckaid.ir
+              <a href={`mailto:${contactContent.contact_email || 'support@truckaid.ir'}`} className="text-primary font-medium">
+                {convertToPersianNumbers(contactContent.contact_email || 'support@truckaid.ir')}
               </a>
             </CardContent>
           </Card>
@@ -93,11 +134,10 @@ export const ContactPage: React.FC = () => {
               <div>
                 <h3 className="font-semibold mb-2">دفتر مرکزی</h3>
                 <p className="text-muted-foreground mb-2">
-                  تهران، خیابان ولیعصر، بالاتر از تقاطع پارک‌ساعی، 
-                  پلاک ۱۲۳۴، طبقه ۵، واحد ۱۰
+                  {convertToPersianNumbers(contactContent.contact_address || 'تهران، خیابان ولیعصر، بالاتر از تقاطع پارک‌ساعی، پلاک ۱۲۳۴، طبقه ۵، واحد ۱۰')}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  کد پستی: ۱۹۱۵۷-۴۴۴۱۱
+                  کد پستی: {convertToPersianNumbers(contactContent.contact_postal_code || '۱۹۱۵۷-۴۴۴۱۱')}
                 </p>
               </div>
             </div>
@@ -114,11 +154,11 @@ export const ContactPage: React.FC = () => {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>شنبه تا پنج‌شنبه:</span>
-                    <span className="font-medium">۸:۰۰ - ۲۰:۰۰</span>
+                    <span className="font-medium">{convertToPersianNumbers(contactContent.working_hours_weekday || '۸:۰۰ - ۲۰:۰۰')}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>جمعه:</span>
-                    <span className="font-medium">۱۰:۰۰ - ۱۸:۰۰</span>
+                    <span className="font-medium">{convertToPersianNumbers(contactContent.working_hours_friday || '۱۰:۰۰ - ۱۸:۰۰')}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>خدمات اضطراری:</span>
@@ -201,26 +241,6 @@ export const ContactPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Quick Help */}
-        <Card>
-          <CardContent className="p-6">
-            <h3 className="font-semibold mb-3">سؤالات متداول</h3>
-            <div className="space-y-3 text-sm">
-              <div>
-                <h4 className="font-medium">چگونه ارائه‌دهنده خدمات شوم؟</h4>
-                <p className="text-muted-foreground">از منوی اصلی گزینه "ثبت‌نام ارائه‌دهنده" را انتخاب کنید.</p>
-              </div>
-              <div>
-                <h4 className="font-medium">آیا خدمات شبانه‌روزی است؟</h4>
-                <p className="text-muted-foreground">بله، خدمات اضطراری ۲۴ ساعته در دسترس است.</p>
-              </div>
-              <div>
-                <h4 className="font-medium">چگونه کیفیت خدمات کنترل می‌شود؟</h4>
-                <p className="text-muted-foreground">همه ارائه‌دهندگان تأیید شده و بازخوردهای مشتریان بررسی می‌شود.</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       <Footer />

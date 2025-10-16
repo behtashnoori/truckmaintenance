@@ -15,7 +15,8 @@ import {
   LogOut,
   Tag,
   MapPin,
-  Truck
+  Truck,
+  Edit3
 } from 'lucide-react'
 
 interface AdminSidebarProps {
@@ -85,6 +86,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onItemClick }) => {
       href: '/admin/reports',
       badge: null,
       description: 'گزارش‌های تحلیلی'
+    },
+    {
+      title: 'مدیریت محتوا',
+      icon: Edit3,
+      href: '/admin/content',
+      badge: null,
+      description: 'مدیریت محتوای صفحات'
     },
     {
       title: 'تنظیمات',

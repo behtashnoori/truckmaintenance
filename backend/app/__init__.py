@@ -84,7 +84,7 @@ def create_app(test_config=None):
         return response
 
     with app.app_context():
-        from backend.models import company, provider_application, user
+        from backend.models import company, provider_application, user, content
     
         # Import all route blueprints
         from backend.routes.company import bp as company_bp
@@ -96,6 +96,8 @@ def create_app(test_config=None):
         from backend.routes.admin_locations import bp as admin_locations_bp
         from backend.routes.admin_vehicle_types import bp as admin_vehicle_types_bp
         from backend.routes.public import bp as public_bp
+        from backend.routes.content import bp as content_bp
+        from backend.routes.contact import bp as contact_bp
         
         # Register all blueprints
         app.register_blueprint(company_bp, url_prefix='/api')
@@ -107,6 +109,8 @@ def create_app(test_config=None):
         app.register_blueprint(admin_locations_bp, url_prefix='/api/admin')
         app.register_blueprint(admin_vehicle_types_bp, url_prefix='/api/admin')
         app.register_blueprint(public_bp, url_prefix='/api/public')
+        app.register_blueprint(content_bp, url_prefix='/api')
+        app.register_blueprint(contact_bp, url_prefix='/api')
 
     @app.route('/')
     def health():
