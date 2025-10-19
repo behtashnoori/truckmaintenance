@@ -64,9 +64,23 @@ docs/               # Documentation and reports
 
 ---
 
+## Quick Start
+
+**Important**: Make sure you're in the correct directory before running setup commands:
+
+```bash
+# Navigate to the project root directory
+cd truckmaintenance
+```
+
+---
+
 ## Backend Setup
 
 ```bash
+# ابتدا به دایرکتوری پروژه بروید
+cd truckmaintenance
+
 # داخل venv
 pip install -r requirements.txt
 
@@ -133,6 +147,9 @@ If the `page` query parameter is supplied to `/providers`, results are wrapped a
 ## Frontend Setup (separate terminal)
 
 ```bash
+# ابتدا به دایرکتوری پروژه بروید
+cd truckmaintenance
+
 npm install
 
 # تنظیم متغیرها (اختیاری)
@@ -160,21 +177,26 @@ The project includes several utility scripts for common tasks. See [scripts/READ
 
 ### Create Admin User
 ```bash
+# Make sure you're in the project directory
+cd truckmaintenance
 python scripts/create_admin.py
 ```
 
 ### Create Business Expert User
 ```bash
+cd truckmaintenance
 python scripts/create_business_expert.py
 ```
 
 ### Reset Admin Password
 ```bash
+cd truckmaintenance
 python scripts/reset_admin_password.py
 ```
 
 ### Run Celery Worker
 ```bash
+cd truckmaintenance
 python scripts/celery_worker.py
 ```
 
@@ -186,11 +208,14 @@ The project includes a comprehensive test suite organized by test type. See [tes
 
 ### Run All Tests
 ```bash
+# Make sure you're in the project directory
+cd truckmaintenance
 pytest tests/
 ```
 
 ### Run Specific Test Categories
 ```bash
+cd truckmaintenance
 pytest tests/api/          # API tests
 pytest tests/admin/        # Admin panel tests
 pytest tests/performance/  # Performance tests
@@ -200,6 +225,7 @@ pytest tests/integration/  # Integration tests
 
 ### Run with Coverage
 ```bash
+cd truckmaintenance
 pytest tests/ --cov=backend --cov-report=html
 ```
 

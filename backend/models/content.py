@@ -32,3 +32,4 @@ class ContentManagement(db.Model):
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'updated_by': self.updated_by
         }
+

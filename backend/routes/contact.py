@@ -122,3 +122,4 @@ def send_contact_email(to_email, name, email, subject, message):
     except Exception as e:
         print(f"Error sending email: {e}")
         return False
+
