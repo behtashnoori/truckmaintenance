@@ -64,9 +64,43 @@ docs/               # Documentation and reports
 
 ---
 
+## Quick Start
+
+```bash
+# 1. کلون کردن پروژه و ورود به فولدر
+git clone <repository-url>
+cd truckmaintenance
+
+# 2. نصب dependencies
+pip install -r requirements.txt
+npm install
+
+# 3. تنظیم دیتابیس (اختیاری)
+# cp backend/db_credentials.example.py backend/db_credentials.py
+# ویرایش فایل db_credentials.py با اطلاعات دیتابیس خود
+
+# 4. اعمال migrations
+python -m flask --app backend.app db upgrade
+
+# 5. ایجاد کاربر ادمین
+python scripts/create_admin.py
+
+# 6. اجرای پروژه (دو ترمینال)
+# ترمینال 1 - Frontend:
+npm run frontend
+
+# ترمینال 2 - Backend:
+npm run backend
+```
+
+---
+
 ## Backend Setup
 
 ```bash
+# ابتدا وارد فولدر پروژه شوید
+cd truckmaintenance
+
 # داخل venv
 pip install -r requirements.txt
 
@@ -133,6 +167,9 @@ If the `page` query parameter is supplied to `/providers`, results are wrapped a
 ## Frontend Setup (separate terminal)
 
 ```bash
+# ابتدا وارد فولدر پروژه شوید
+cd truckmaintenance
+
 npm install
 
 # تنظیم متغیرها (اختیاری)
@@ -160,21 +197,25 @@ The project includes several utility scripts for common tasks. See [scripts/READ
 
 ### Create Admin User
 ```bash
+cd truckmaintenance
 python scripts/create_admin.py
 ```
 
 ### Create Business Expert User
 ```bash
+cd truckmaintenance
 python scripts/create_business_expert.py
 ```
 
 ### Reset Admin Password
 ```bash
+cd truckmaintenance
 python scripts/reset_admin_password.py
 ```
 
 ### Run Celery Worker
 ```bash
+cd truckmaintenance
 python scripts/celery_worker.py
 ```
 
@@ -186,11 +227,13 @@ The project includes a comprehensive test suite organized by test type. See [tes
 
 ### Run All Tests
 ```bash
+cd truckmaintenance
 pytest tests/
 ```
 
 ### Run Specific Test Categories
 ```bash
+cd truckmaintenance
 pytest tests/api/          # API tests
 pytest tests/admin/        # Admin panel tests
 pytest tests/performance/  # Performance tests
@@ -200,6 +243,7 @@ pytest tests/integration/  # Integration tests
 
 ### Run with Coverage
 ```bash
+cd truckmaintenance
 pytest tests/ --cov=backend --cov-report=html
 ```
 

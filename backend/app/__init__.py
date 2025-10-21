@@ -26,7 +26,7 @@ def create_app(test_config=None):
     app.config["JSON_SORT_KEYS"] = False
 
     # CORS configuration based on environment
-    allowed_origins = os.getenv('CORS_ORIGINS', 'http://localhost:3000,http://localhost:5173,http://127.0.0.1:5173').split(',')
+    allowed_origins = os.getenv('CORS_ORIGINS', 'http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:5176,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:5176').split(',')
     
     # For development, allow all origins
     if os.getenv('FLASK_ENV') != 'production':
@@ -98,6 +98,7 @@ def create_app(test_config=None):
         from backend.routes.public import bp as public_bp
         from backend.routes.content import bp as content_bp
         from backend.routes.contact import bp as contact_bp
+        from backend.routes.business_expert_content import bp as business_expert_content_bp
         
         # Register all blueprints
         app.register_blueprint(company_bp, url_prefix='/api')
@@ -111,6 +112,7 @@ def create_app(test_config=None):
         app.register_blueprint(public_bp, url_prefix='/api/public')
         app.register_blueprint(content_bp, url_prefix='/api')
         app.register_blueprint(contact_bp, url_prefix='/api')
+        app.register_blueprint(business_expert_content_bp, url_prefix='/api')
 
     @app.route('/')
     def health():

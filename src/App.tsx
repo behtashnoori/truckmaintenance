@@ -29,6 +29,9 @@ import ApplicationReview from "./pages/business-expert/ApplicationReview";
 import { AddProvider } from "./pages/business-expert/AddProvider";
 import { BulkUpload } from "./pages/business-expert/BulkUpload";
 import { ManageProviders } from "./pages/business-expert/ManageProviders";
+import BusinessExpertContentManagement from "./pages/business-expert/ContentManagement";
+import ContactContentManagement from "./pages/business-expert/ContactContentManagement";
+import AboutContentManagement from "./pages/business-expert/AboutContentManagement";
 import { CategoryManagement } from "./pages/admin/CategoryManagement";
 import { LocationsManagement } from "./pages/admin/LocationsManagement";
 import { VehicleTypesManagement } from "./pages/admin/VehicleTypesManagement";
@@ -153,6 +156,21 @@ const App = () => (
             <Route path="/business-expert/providers/bulk-upload" element={
               <ProtectedRoute requiredRole="business_expert">
                 <BulkUpload />
+              </ProtectedRoute>
+            } />
+            <Route path="/business-expert/content" element={
+              <ProtectedRoute requiredRole="business_expert">
+                <BusinessExpertContentManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/business-expert/content/contact" element={
+              <ProtectedRoute requiredRole="business_expert">
+                <ContactContentManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/business-expert/content/about" element={
+              <ProtectedRoute requiredRole="business_expert">
+                <AboutContentManagement />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

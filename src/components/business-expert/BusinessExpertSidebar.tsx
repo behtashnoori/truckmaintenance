@@ -18,7 +18,10 @@ import {
   TrendingUp,
   Building,
   Users,
-  Upload
+  Upload,
+  Edit3,
+  Phone,
+  FileText
 } from 'lucide-react'
 
 interface BusinessExpertSidebarProps {
@@ -92,6 +95,27 @@ const BusinessExpertSidebar: React.FC<BusinessExpertSidebarProps> = ({ onItemCli
       href: '/business-expert/providers/bulk-upload',
       badge: null,
       description: 'آپلود انبوه ارائه‌دهندگان'
+    },
+    {
+      title: 'مدیریت محتوا',
+      icon: Edit3,
+      href: '/business-expert/content',
+      badge: null,
+      description: 'مدیریت محتوای صفحات'
+    },
+    {
+      title: 'تماس با ما',
+      icon: Phone,
+      href: '/business-expert/content/contact',
+      badge: null,
+      description: 'مدیریت محتوای صفحه تماس'
+    },
+    {
+      title: 'درباره ما',
+      icon: FileText,
+      href: '/business-expert/content/about',
+      badge: null,
+      description: 'مدیریت محتوای صفحه درباره'
     }
   ]
 
